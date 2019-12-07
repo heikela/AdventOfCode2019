@@ -58,5 +58,42 @@ namespace Common
                 depth += 1;
             }
         }
+
+        private void TopologicalSortVisit(HashSet<T> fullyVisited, HashSet<T> partiallyVisited, Stack<T> sorted, T node)
+        {
+            if (fullyVisited.Contains(node))
+            {
+                return;
+            }
+            if (partiallyVisited.Contains(node))
+            {
+                throw new Exception("Not a DAG");
+            }
+            partiallyVisited.Add(node);
+            foreach (T neighbour in Edges[node])
+            {
+                TopologicalSortVisit(fullyVisited, partiallyVisited, sorted, neighbour);
+            }
+            partiallyVisited.Remove(node);
+            fullyVisited.Add(node);
+            sorted.Push(node);
+        }
+
+        public IEnumerable<T> TopologicalSort()
+        {
+            HashSet<T> fullyVisited = new HashSet<T>();
+            HashSet<T> partiallyVisited = new HashSet<T>();
+            Stack<T> sorted = new Stack<T>();
+            foreach (T node in GetNodes())
+            {
+                TopologicalSortVisit(fullyVisited, partiallyVisited, sorted, node);
+            }
+            while (sorted.Any())
+            {
+                yield return sorted.Pop();
+            }
+            yield break;
+        }
+
     }
 }
