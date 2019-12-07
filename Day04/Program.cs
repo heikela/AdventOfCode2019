@@ -1,37 +1,37 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using static Common.Extensions;
 
 namespace Day04
 {
     class Program
     {
+        static bool Good1(List<int> digits)
+        {
+            IEnumerable<List<int>> adjacents = digits.SplitWhen((prev, next) => prev != next);
+            IEnumerable<List<int>> nonDecreasing = digits.SplitWhen((prev, next) => prev > next);
+            return (adjacents.Any(group => group.Count >= 2) && nonDecreasing.Count() == 1);
+        }
+
+        static bool Good2(List<int> digits)
+        {
+            IEnumerable<List<int>> adjacents = digits.SplitWhen((prev, next) => prev != next);
+            IEnumerable<List<int>> nonDecreasing = digits.SplitWhen((prev, next) => prev > next);
+            return (adjacents.Any(group => group.Count == 2) && nonDecreasing.Count() == 1);
+        }
+
+        static List<int> NumberToDigits(int n)
+        {
+            return n.ToString().ToCharArray().Select(c => int.Parse(c.ToString())).ToList();
+        }
+
         static void Main(string[] args)
         {
-            int good = 0;
-            for (int i = 158126; i <= 624574; ++i)
-            {
-                List<int> digits = i.ToString().ToCharArray().Select(c => int.Parse(c.ToString())).ToList();
-                bool adjacents = false;
-                bool nondecreasing = true;
-                for (int d = 1; d < digits.Count; ++d)
-                {
-
-                    if (digits[d] == digits[d - 1] && (d == digits.Count - 1 || digits[d + 1] != digits[d]) && (d == 1 || digits[d - 2] != digits[d]))
-                    {
-                        adjacents = true;
-                    }
-                    if (digits[d] < digits[d - 1])
-                    {
-                        nondecreasing = false;
-                    }
-                }
-                if (adjacents && nondecreasing)
-                {
-                    ++good;
-                }
-            }
-            Console.WriteLine($"{good}");
+            IEnumerable<int> candidates = Enumerable.Range(158126, 624574 - 158126 + 1);
+            IEnumerable<List<int>> unpackedCandidates = candidates.Select(NumberToDigits);
+            Console.WriteLine($"Part1: {unpackedCandidates.Count(Good1)} good passwords.");
+            Console.WriteLine($"Part1: {unpackedCandidates.Count(Good2)} good passwords.");
         }
     }
 }
