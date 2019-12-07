@@ -6,7 +6,10 @@ namespace Common
 {
     public static class Extensions
     {
-        public static IEnumerable<TElem> MaximalElements<TElem, TVal>(this IEnumerable<TElem> src, Func<TElem, TVal> projection) where TVal : IComparable<TVal>, new()
+        private static IEnumerable<TElem> BestElements<TElem, TVal>(
+            IEnumerable<TElem> src,
+            Func<TElem, TVal> projection,
+            int betterDirection) where TVal : IComparable<TVal>, new()
         {
             bool found = false;
             TVal max = new TVal();
@@ -14,19 +17,30 @@ namespace Common
             foreach (TElem e in src)
             {
                 TVal val = projection(e);
-                if (!found || val.CompareTo(max) > 0)
+                int comparisonResult = val.CompareTo(max) * betterDirection;
+                if (!found || comparisonResult > 0)
                 {
                     found = true;
                     max = val;
                     bestElems = new List<TElem>();
                     bestElems.Add(e);
                 }
-                else if (val.CompareTo(max) == 0)
+                else if (comparisonResult == 0)
                 {
                     bestElems.Add(e);
                 }
             }
             return bestElems.AsEnumerable();
+        }
+
+        public static IEnumerable<TElem> MaximalElements<TElem, TVal>(this IEnumerable<TElem> src, Func<TElem, TVal> projection) where TVal : IComparable<TVal>, new()
+        {
+            return BestElements(src, projection, 1);
+        }
+
+        public static IEnumerable<TElem> MinimalElements<TElem, TVal>(this IEnumerable<TElem> src, Func<TElem, TVal> projection) where TVal : IComparable<TVal>, new()
+        {
+            return BestElements(src, projection, -1);
         }
 
         public static IEnumerable<List<TElem>> SplitWhen<TElem>(this IEnumerable<TElem> seq,
