@@ -77,6 +77,28 @@ namespace Common
             yield break;
         }
 
+        public static IEnumerable<IEnumerable<T>> Transpose<T>(this IEnumerable<IEnumerable<T>> src)
+        {
+            List<IEnumerator<T>> srcEnumerators = src.Select(seq => seq.GetEnumerator()).ToList();
+            bool done = false;
+            while (!done)
+            {
+                Queue<T> heads = new Queue<T>();
+                done = true;
+                foreach (IEnumerator<T> enumerator in srcEnumerators)
+                {
+                    if (enumerator.MoveNext())
+                    {
+                        heads.Enqueue(enumerator.Current);
+                        done = false;
+                    }
+                }
+                if (heads.Any())
+                {
+                    yield return heads;
+                }
+            }
+            yield break;
         }
     }
 }

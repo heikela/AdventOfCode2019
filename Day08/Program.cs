@@ -13,35 +13,20 @@ namespace Day08
         static readonly int H = 6;
         static readonly int LAYER_SIZE = W * H;
 
-        static void PrintImage(IEnumerable<IEnumerable<char>> layers)
+        static void PrintImage(IEnumerable<IEnumerable<Char>> layers)
         {
-            List<List<Char>> layerData = layers.Select(l => l.ToList()).ToList();
-            int layerCount = layerData.Count;
-            for (int y = 0; y < H; ++y)
+            IEnumerator<IEnumerable<Char>> pixels = layers.Transpose().GetEnumerator();
+            int x = 0;
+            while (pixels.MoveNext())
             {
-                for (int x = 0; x < W; ++x)
+                Char firstNonTransparentLayer = pixels.Current.First(c => c != '2');
+                Console.Write(firstNonTransparentLayer == '1' ? "#" : " ");
+                ++x;
+                if (x == W)
                 {
-                    for (int l = 0; l < layerCount; ++l)
-                    {
-                        Char pix = layerData[l].First();
-                        if (pix == '2')
-                        {
-                            continue;
-                        } else if (pix == '0') {
-                            Console.Write(' ');
-                            break;
-                        } else if (pix == '1')
-                        {
-                            Console.Write('#');
-                            break;
-                        }
-                    }
-                    foreach (List<Char> layer in layerData)
-                    {
-                        layer.RemoveAt(0);
-                    }
+                    x = 0;
+                    Console.WriteLine();
                 }
-                Console.WriteLine();
             }
         }
 
