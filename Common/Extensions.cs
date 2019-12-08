@@ -65,5 +65,16 @@ namespace Common
             }
             yield break;
         }
+
+        public static IEnumerable<IEnumerable<T>> Slices<T>(this IEnumerable<T> seq, int sliceLength)
+        {
+            IEnumerable<T> rest = seq;
+            while (rest.Any())
+            {
+                yield return rest.Take(sliceLength);
+                rest = rest.Skip(sliceLength);
+            }
+
+        }
     }
 }

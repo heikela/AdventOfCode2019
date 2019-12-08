@@ -13,16 +13,6 @@ namespace Day08
         static readonly int H = 6;
         static readonly int LAYER_SIZE = W * H;
 
-        static IEnumerable<IEnumerable<Char>> SplitToLayers(Char[] imageData)
-        {
-            IEnumerable<Char> rest = imageData.AsEnumerable();
-            while (rest.Any())
-            {
-                yield return rest.Take(LAYER_SIZE);
-                rest = rest.Skip(LAYER_SIZE);
-            }
-        }
-
         static void PrintImage(IEnumerable<IEnumerable<char>> layers)
         {
             List<List<Char>> layerData = layers.Select(l => l.ToList()).ToList();
@@ -58,7 +48,7 @@ namespace Day08
         static void Main(string[] args)
         {
             Char[] imageData = File.ReadLines("../../../input.txt").First().ToCharArray();
-            IEnumerable<IEnumerable<Char>> layers = SplitToLayers(imageData);
+            IEnumerable<IEnumerable<Char>> layers = imageData.Slices(LAYER_SIZE);
             IEnumerable<Char> bestLayer = layers.MinimalElements(l => l.Count(c => c == '0')).First();
             Console.WriteLine($"Part 1: {bestLayer.Count(c => c == '1') * bestLayer.Count(c => c == '2')}");
             PrintImage(layers);
