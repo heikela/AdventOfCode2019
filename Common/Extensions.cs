@@ -74,6 +74,8 @@ namespace Common
                 yield return rest.Take(sliceLength);
                 rest = rest.Skip(sliceLength);
             }
+            yield break;
+        }
 
         }
     }
