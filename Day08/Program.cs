@@ -15,18 +15,15 @@ namespace Day08
 
         static void PrintImage(IEnumerable<IEnumerable<Char>> layers)
         {
-            IEnumerator<IEnumerable<Char>> pixels = layers.Transpose().GetEnumerator();
-            int x = 0;
-            while (pixels.MoveNext())
+            IEnumerable<IEnumerable<IEnumerable<Char>>> pixelRows = layers.Transpose().Slices(W);
+            foreach (var row in pixelRows)
             {
-                Char firstNonTransparentLayer = pixels.Current.First(c => c != '2');
-                Console.Write(firstNonTransparentLayer == '1' ? "#" : " ");
-                ++x;
-                if (x == W)
+                foreach (var pixel in row)
                 {
-                    x = 0;
-                    Console.WriteLine();
+                    Char firstNonTransparentLayer = pixel.First(c => c != '2');
+                    Console.Write(firstNonTransparentLayer == '1' ? "#" : " ");
                 }
+                Console.WriteLine();
             }
         }
 
