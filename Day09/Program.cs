@@ -2,31 +2,54 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.IO;
+using Common;
+using System.Numerics;
 
 namespace Day09
 {
     class IntCodeComputer
     {
-        List<Int64> Memory;
-        int PC;
-        Int64 RelativeBase;
+        Dictionary<BigInteger, BigInteger> Memory;
+        BigInteger PC;
+        BigInteger RelativeBase;
+
+        struct AddrLens
+        {
+            public Action<BigInteger> Set;
+            public Func<BigInteger> Get;
+        }
 
         public IntCodeComputer(string input)
         {
-            Memory = input.Split(',').Select(s => Int64.Parse(s)).ToList();
+            string[] numbers = input.Split(',');
+            IEnumerable<(int pos, BigInteger val)> addressValuePairs = Enumerable.Range(0, numbers.Length)
+                .Zip(numbers.Select(s => BigInteger.Parse(s)));
+            Memory = addressValuePairs.ToDictionary<(int pos, BigInteger val), BigInteger, BigInteger>(
+                pair => pair.pos,
+                pair => pair.val);
             PC = 0;
             RelativeBase = 0;
         }
 
-        void GrowMemory(int requiredAddress)
+        BigInteger GetMem(BigInteger addr)
         {
-            if (Memory.Count <= requiredAddress)
+            if (addr < 0)
             {
-                Memory.AddRange(new Int64[requiredAddress - Memory.Count + 1]);
-            }
+                throw new Exception($"Attempted to address negative memory address {addr}");
+            } 
+            return Memory.GetOrElse(addr, 0);
         }
 
-        Int64 GetParam(Int64 opcode, int param)
+        void SetMem(BigInteger addr, BigInteger val)
+        {
+            if (addr < 0)
+            {
+                throw new Exception($"Attempted to address negative memory address {addr}");
+            }
+            Memory.AddOrSet(addr, val);
+        }
+
+        AddrLens DecodeParam(BigInteger opcode, int param)
         {
             int pow = 100;
             for (int i = 0; i < param; ++i)
@@ -35,67 +58,44 @@ namespace Day09
             }
             bool immediate = (opcode / pow) % 10 == 1;
             bool relative = (opcode / pow) % 10 == 2;
-            Int64 paramValue = Memory[PC + param + 1];
+            BigInteger paramValue = GetMem(PC + param + 1);
             if (immediate)
             {
-                return paramValue;
-            }
-            else if (relative)
-            {
-                int addr = (int)(paramValue + RelativeBase);
-                GrowMemory(addr);
-                return Memory[addr];
+                return new AddrLens()
+                {
+                    Get = () => paramValue,
+                    Set = (newVal) => throw new Exception("Cannot write to immediate mode param")
+                };
             }
             else
             {
-                int addr = (int)(paramValue);
-                GrowMemory(addr);
-                return Memory[addr];
+                if (relative)
+                {
+                    paramValue += RelativeBase;
+                }
+                return new AddrLens()
+                {
+                    Get = () => GetMem(paramValue),
+                    Set = (val) => SetMem(paramValue, val)
+                };
             }
         }
 
-        int GetParamAddr(Int64 opcode, int param)
+        void ExecuteBinOp(BigInteger opcode, Func<BigInteger, BigInteger, BigInteger> op)
         {
-            int pow = 100;
-            for (int i = 0; i < param; ++i)
-            {
-                pow *= 10;
-            }
-            bool relative = (opcode / pow) % 10 == 2;
-            Int64 paramValue = Memory[PC + param + 1];
-            if (relative)
-            {
-                int addr = (int)(paramValue + RelativeBase);
-                GrowMemory(addr);
-                return addr;
-            }
-            else
-            {
-                int addr = (int)(paramValue);
-                GrowMemory(addr);
-                return addr;
-            }
+            DecodeParam(opcode, 2).Set(
+                op(
+                    DecodeParam(opcode, 0).Get(),
+                    DecodeParam(opcode, 1).Get()));
         }
 
-        void ExecuteBinOp(Int64 opcode, Func<Int64, Int64, Int64> op)
+        public (bool, List<BigInteger>) RunIntCode(Queue<BigInteger> input)
         {
-//            Int64 destAddr = (int)Memory[PC + 3];
-            int destAddr = GetParamAddr(opcode, 2);
-/*            if ((opcode / 10000) % 10 == 2)
-            {
-                destAddr = destAddr + RelativeBase;
-            }*/
-            GrowMemory((int)destAddr);
-            Memory[destAddr] = op(GetParam(opcode, 0), GetParam(opcode, 1));
-        }
-
-        public (bool, List<Int64>) RunIntCode(Queue<Int64> input)
-        {
-            List<Int64> output = new List<Int64>();
+            List<BigInteger> output = new List<BigInteger>();
             while (true)
             {
-                Int64 opcode = Memory[PC];
-                switch (opcode % 100)
+                BigInteger opcode = GetMem(PC);
+                switch ((int)(opcode % 100))
                 {
                     case 1:
                         {
@@ -113,8 +113,7 @@ namespace Day09
                         {
                             if (input.Any())
                             {
-                                int destAddr = GetParamAddr(opcode, 0);
-                                Memory[destAddr] = input.Dequeue();
+                                DecodeParam(opcode, 0).Set(input.Dequeue());
                                 PC += 2;
                                 break;
                             }
@@ -125,30 +124,29 @@ namespace Day09
                         }
                     case 4:
                         {
-                            Int64 val = GetParam(opcode, 0);
-                            output.Add(val);
+                            output.Add(DecodeParam(opcode, 0).Get());
                             PC += 2;
                             break;
                         }
                     case 5:
                         {
-                            Int64 val = GetParam(opcode, 0);
-                            Int64 dest = GetParam(opcode, 1);
+                            BigInteger val = DecodeParam(opcode, 0).Get();
+                            BigInteger dest = DecodeParam(opcode, 1).Get();
                             PC += 3;
                             if (val != 0)
                             {
-                                PC = (int)dest;
+                                PC = dest;
                             }
                             break;
                         }
                     case 6:
                         {
-                            Int64 val = GetParam(opcode, 0);
-                            Int64 dest = GetParam(opcode, 1);
+                            BigInteger val = DecodeParam(opcode, 0).Get();
+                            BigInteger dest = DecodeParam(opcode, 1).Get();
                             PC += 3;
                             if (val == 0)
                             {
-                                PC = (int)dest;
+                                PC = dest;
                             }
                             break;
                         }
@@ -166,7 +164,7 @@ namespace Day09
                         }
                     case 9:
                         {
-                            Int64 change = GetParam(opcode, 0);
+                            BigInteger change = DecodeParam(opcode, 0).Get();
                             RelativeBase = change + RelativeBase;
                             PC += 2;
                             break;
@@ -176,7 +174,6 @@ namespace Day09
                     default:
                         throw new Exception($"ERROR: unknown Opcode {opcode} at address {PC}");
                 }
-                GrowMemory(PC + 3);
             }
         }
     }
@@ -185,21 +182,21 @@ namespace Day09
     {
         static string BoostProgram;
 
-        static Queue<Int64> MakeInput(IEnumerable<Int64> values)
+        static Queue<BigInteger> MakeInput(IEnumerable<BigInteger> values)
         {
-            Queue<Int64> q = new Queue<Int64>();
-            foreach (Int64 d in values)
+            Queue<BigInteger> q = new Queue<BigInteger>();
+            foreach (BigInteger d in values)
             {
                 q.Enqueue(d);
             }
             return q;
         }
 
-        static void RunWithInput(Int64 value)
+        static void RunWithInput(BigInteger value)
         {
             IntCodeComputer computer = new IntCodeComputer(BoostProgram);
-            var result = computer.RunIntCode(MakeInput(new Int64[] { value }));
-            foreach (Int64 outputValue in result.Item2)
+            var result = computer.RunIntCode(MakeInput(new BigInteger[] { value }));
+            foreach (BigInteger outputValue in result.Item2)
             {
                 Console.WriteLine($"{outputValue}");
             }
