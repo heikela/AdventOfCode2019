@@ -100,5 +100,29 @@ namespace Common
             }
             yield break;
         }
+
+        public static TVal GetOrElse<TKey, TVal>(this Dictionary<TKey, TVal> dict, TKey key, TVal ifNotFound)
+        {
+            if (dict.TryGetValue(key, out TVal result))
+            {
+                return result;
+            }
+            else
+            {
+                return ifNotFound;
+            }
+        }
+
+        public static void AddOrSet<TKey, TVal>(this Dictionary<TKey, TVal> dict, TKey key, TVal val)
+        {
+            if (dict.ContainsKey(key))
+            {
+                dict[key] = val;
+            }
+            else
+            {
+                dict.Add(key, val);
+            }
+        }
     }
 }
