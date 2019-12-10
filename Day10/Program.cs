@@ -30,67 +30,6 @@ namespace Day10
             }
         }
 
-        private class ClockwiseComparer : IComparer<IntPoint2D>
-        {
-            int IComparer<IntPoint2D>.Compare(IntPoint2D a, IntPoint2D b)
-            {
-                int quadrant(IntPoint2D p)
-                {
-                    if (p.X == 0 && p.Y == 0)
-                    {
-                        throw new Exception("Quadrant not defined for origin");
-                    }
-                    if (p.X >= 0 && p.Y < 0)
-                    {
-                        return 0;
-                    }
-                    else if (p.X > 0 && p.Y >= 0)
-                    {
-                        return 1;
-                    }
-                    else if (p.X <= 0 && p.Y > 0)
-                    {
-                        return 2;
-                    }
-                    else if (p.X < 0 && p.Y <= 0)
-                    {
-                        return 3;
-                    }
-                    // Should be unreachable
-                    throw new Exception($"Could not determine quadrant for {p.X}, {p.Y}. This should not happen");
-                }
-                // 1. treat origin as equal with all directions
-                // other options would be even more arbitrary
-                if ((a.X == 0 && a.Y == 0) || (b.X == 0 && b.Y == 0))
-                {
-                    return 0;
-                }
-                int quadrantA = quadrant(a);
-                int quadrantB = quadrant(b);
-                if (quadrantA < quadrantB)
-                {
-                    return -1;
-                }
-                if (quadrantB < quadrantA)
-                {
-                    return 1;
-                }
-                // both in same quadrant.
-                if (quadrantA == 1 || quadrantA == 3)
-                {
-                    decimal tanA = decimal.Divide(a.Y, a.X);
-                    decimal tanB = decimal.Divide(b.Y, b.X);
-                    return decimal.Compare(tanA, tanB);
-                }
-                else
-                {
-                    decimal tanA = decimal.Divide(a.X, -a.Y);
-                    decimal tanB = decimal.Divide(b.X, -b.Y);
-                    return decimal.Compare(tanA, tanB);
-                }
-            }
-        }
-
         static Dictionary<IntPoint2D, List<(IntPoint2D, IntPoint2D)>> ListDirections(IntPoint2D asteroid)
         {
             Dictionary<IntPoint2D, List<(IntPoint2D, IntPoint2D)>> distancesByDirection = new Dictionary<IntPoint2D, List<(IntPoint2D, IntPoint2D)>>();
@@ -139,8 +78,10 @@ namespace Day10
                 .Select(ListDirections)
                 .MaximalElements(dict => dict.Keys.Count).First();
             Console.WriteLine($"Best asteroid can detect {directionsFromStation.Keys.Count}");
+
+            // -Atan2 as opposed to -X due to how the boundary conditions work
             List<List<(IntPoint2D, IntPoint2D)>>directionsOrdered = directionsFromStation
-                .OrderBy(kv => kv.Key, new ClockwiseComparer())
+                .OrderBy(kv => -Math.Atan2(kv.Key.X, kv.Key.Y))
                 .Select(kv => kv.Value)
                 .ToList();
             int dirIndex = 0;
