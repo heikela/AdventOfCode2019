@@ -34,44 +34,60 @@ namespace Day10
         {
             int IComparer<IntPoint2D>.Compare(IntPoint2D a, IntPoint2D b)
             {
-                if (a == b)
+                int quadrant(IntPoint2D p)
+                {
+                    if (p.X == 0 && p.Y == 0)
+                    {
+                        throw new Exception("Quadrant not defined for origin");
+                    }
+                    if (p.X >= 0 && p.Y < 0)
+                    {
+                        return 0;
+                    }
+                    else if (p.X > 0 && p.Y >= 0)
+                    {
+                        return 1;
+                    }
+                    else if (p.X <= 0 && p.Y > 0)
+                    {
+                        return 2;
+                    }
+                    else if (p.X < 0 && p.Y <= 0)
+                    {
+                        return 3;
+                    }
+                    // Should be unreachable
+                    throw new Exception($"Could not determine quadrant for {p.X}, {p.Y}. This should not happen");
+                }
+                // 1. treat origin as equal with all directions
+                // other options would be even more arbitrary
+                if ((a.X == 0 && a.Y == 0) || (b.X == 0 && b.Y == 0))
                 {
                     return 0;
                 }
-                if (a.X == 0 && a.Y < 0 && (b.X != 0 || b.Y >= 0))
+                int quadrantA = quadrant(a);
+                int quadrantB = quadrant(b);
+                if (quadrantA < quadrantB)
                 {
                     return -1;
                 }
-                if (b.X == 0 && b.Y < 0 && (a.X != 0 || a.Y >= 0))
+                if (quadrantB < quadrantA)
                 {
                     return 1;
                 }
-                if (a.X == 0 && a.Y > 0 && b.X > 0)
+                // both in same quadrant.
+                if (quadrantA == 1 || quadrantA == 3)
                 {
-                    return 1;
+                    decimal tanA = decimal.Divide(a.Y, a.X);
+                    decimal tanB = decimal.Divide(b.Y, b.X);
+                    return decimal.Compare(tanA, tanB);
                 }
-                if (a.X == 0 && a.Y > 0 && b.X < 0)
+                else
                 {
-                    return -1;
+                    decimal tanA = decimal.Divide(a.X, -a.Y);
+                    decimal tanB = decimal.Divide(b.X, -b.Y);
+                    return decimal.Compare(tanA, tanB);
                 }
-                if (b.X == 0 && b.Y > 0 && a.X > 0)
-                {
-                    return -1;
-                }
-                if (b.X == 0 && b.Y > 0 && a.X < 0)
-                {
-                    return 1;
-                }
-                if (a.X > 0 && b.X <= 0) {
-                    return -1;
-                }
-                if (b.X > 0 && a.X <= 0)
-                {
-                    return 1;
-                }
-                decimal tanA = decimal.Divide(a.Y, a.X);
-                decimal tanB = decimal.Divide(b.Y, b.X);
-                return decimal.Compare(tanA, tanB);
             }
         }
 
@@ -136,7 +152,6 @@ namespace Day10
                     ++dirIndex;
                 }
                 (IntPoint2D dist, IntPoint2D pos) point = directionsOrdered[dirIndex].First();
-                Console.WriteLine($"destroying asteroid at {point.pos.X}, {point.pos.Y}");
                 result = point.pos.X * 100 + point.pos.Y;
                 directionsOrdered[dirIndex].RemoveAt(0);
                 dirIndex++;
