@@ -30,9 +30,10 @@ namespace Day10
             }
         }
 
-        static Dictionary<IntPoint2D, List<(IntPoint2D, IntPoint2D)>> ListDirections(IntPoint2D asteroid)
+        static Dictionary<IntPoint2D, List<IntPoint2D>> AsteroidsByDirectionAndRadius(IntPoint2D asteroid)
         {
-            Dictionary<IntPoint2D, List<(IntPoint2D, IntPoint2D)>> distancesByDirection = new Dictionary<IntPoint2D, List<(IntPoint2D, IntPoint2D)>>();
+            Dictionary<IntPoint2D, List<(IntPoint2D pos, IntPoint2D dist)>> asteroidsAndDistancesByDirection =
+                new Dictionary<IntPoint2D, List<(IntPoint2D, IntPoint2D)>>();
             foreach (IntPoint2D other in Asteroids)
             {
                 if (asteroid == other)
@@ -42,17 +43,20 @@ namespace Day10
                 IntPoint2D distance = other - asteroid;
                 int gcd = GCD(Math.Abs(distance.X), Math.Abs(distance.Y));
                 IntPoint2D direction = new IntPoint2D(distance.X / gcd, distance.Y / gcd);
-                if (!distancesByDirection.ContainsKey(direction))
+                if (!asteroidsAndDistancesByDirection.ContainsKey(direction))
                 {
-                    distancesByDirection.Add(direction, new List<(IntPoint2D, IntPoint2D)>());
+                    asteroidsAndDistancesByDirection.Add(direction, new List<(IntPoint2D pos, IntPoint2D dist)>());
                 }
-                distancesByDirection[direction].Add((distance, other));
+                asteroidsAndDistancesByDirection[direction].Add((other, distance));
             }
-            foreach (var dir in distancesByDirection.Keys.ToList())
-            {
-                distancesByDirection[dir] = distancesByDirection[dir].OrderBy(pair => pair.Item1.ManhattanDist()).ToList();
-            }
-            return distancesByDirection;
+
+            return asteroidsAndDistancesByDirection
+                .ToDictionary(
+                    kv => kv.Key,
+                    kv => kv.Value
+                        .OrderBy<(IntPoint2D pos, IntPoint2D dist), int>(pair => pair.dist.ManhattanDist())
+                        .Select(pair => pair.pos)
+                        .ToList());
         }
 
         static void Main(string[] args)
@@ -74,20 +78,19 @@ namespace Day10
                 }
                 ++y;
             }
-            Dictionary<IntPoint2D, List<(IntPoint2D, IntPoint2D)>> directionsFromStation = Asteroids
-                .Select(ListDirections)
+            Dictionary<IntPoint2D, List<IntPoint2D>> asteroidsFromStation = Asteroids
+                .Select(AsteroidsByDirectionAndRadius)
                 .MaximalElements(dict => dict.Keys.Count).First();
-            Console.WriteLine($"Best asteroid can detect {directionsFromStation.Keys.Count}");
+            Console.WriteLine($"Best asteroid can detect {asteroidsFromStation.Keys.Count}");
 
             // -Atan2 as opposed to -X due to how the boundary conditions work
-            IntPoint2D chosen = directionsFromStation
+            IntPoint2D chosen = asteroidsFromStation
                 .OrderBy(kv => -Math.Atan2(kv.Key.X, kv.Key.Y))
                 .Select(kv => kv.Value)
                 .Transpose()
                 .Flatten()
-                .ElementAt(199).Item2;
+                .ElementAt(199);
             int score = chosen.X * 100 + chosen.Y;
-
 
             Console.WriteLine($"Part2 {score}");
         }
