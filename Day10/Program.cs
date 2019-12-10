@@ -80,24 +80,16 @@ namespace Day10
             Console.WriteLine($"Best asteroid can detect {directionsFromStation.Keys.Count}");
 
             // -Atan2 as opposed to -X due to how the boundary conditions work
-            List<List<(IntPoint2D, IntPoint2D)>>directionsOrdered = directionsFromStation
+            IntPoint2D chosen = directionsFromStation
                 .OrderBy(kv => -Math.Atan2(kv.Key.X, kv.Key.Y))
                 .Select(kv => kv.Value)
-                .ToList();
-            int dirIndex = 0;
-            int result = 0;
-            for (int i = 0; i < 200; ++i)
-            {
-                while (!directionsOrdered[dirIndex].Any())
-                {
-                    ++dirIndex;
-                }
-                (IntPoint2D dist, IntPoint2D pos) point = directionsOrdered[dirIndex].First();
-                result = point.pos.X * 100 + point.pos.Y;
-                directionsOrdered[dirIndex].RemoveAt(0);
-                dirIndex++;
-            }
-            Console.WriteLine($"Part2 {result}");
+                .Transpose()
+                .Flatten()
+                .ElementAt(199).Item2;
+            int score = chosen.X * 100 + chosen.Y;
+
+
+            Console.WriteLine($"Part2 {score}");
         }
     }
 }

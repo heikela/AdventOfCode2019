@@ -101,6 +101,11 @@ namespace Common
             yield break;
         }
 
+        public static IEnumerable<T> Flatten<T>(this IEnumerable<IEnumerable<T>> src)
+        {
+            return src.SelectMany(part => part);
+        }
+
         public static TVal GetOrElse<TKey, TVal>(this Dictionary<TKey, TVal> dict, TKey key, TVal ifNotFound)
         {
             if (dict.TryGetValue(key, out TVal result))
