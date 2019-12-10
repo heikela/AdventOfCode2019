@@ -61,23 +61,12 @@ namespace Day10
 
         static void Main(string[] args)
         {
-            IEnumerable<string> lines = File.ReadLines("../../../input.txt");
-            int x = 0;
-            int y = 0;
-            Asteroids = new HashSet<IntPoint2D>();
-            foreach (string line in lines)
-            {
-                x = 0;
-                foreach (Char c in line.AsEnumerable())
-                {
-                    if (c == '#')
-                    {
-                        Asteroids.Add(new IntPoint2D(x, y));
-                    }
-                    ++x;
-                }
-                ++y;
-            }
+            Asteroids = SparseGrid
+                .ReadFromFile("../../../input.txt")
+                .Where(kv => kv.Value == '#')
+                .Select(kv => kv.Key)
+                .ToHashSet();
+
             Dictionary<IntPoint2D, List<IntPoint2D>> asteroidsFromStation = Asteroids
                 .Select(AsteroidsByDirectionAndRadius)
                 .MaximalElements(dict => dict.Keys.Count).First();

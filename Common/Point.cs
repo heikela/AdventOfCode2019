@@ -2,7 +2,7 @@
 
 namespace Common
 {
-	struct IntPoint2D : IEquatable<IntPoint2D>
+	public struct IntPoint2D : IEquatable<IntPoint2D>
 	{
 		public int X { get; set; }
 		public int Y { get; set; }
@@ -67,7 +67,7 @@ namespace Common
 		}
 	}
 
-	struct IntPoint3D : IEquatable<IntPoint3D>
+	public struct IntPoint3D : IEquatable<IntPoint3D>
 	{
 		public int X { get; set; }
 		public int Y { get; set; }
