@@ -129,5 +129,16 @@ namespace Common
                 dict.Add(key, val);
             }
         }
+
+        public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> keyValuePairs)
+        {
+            return keyValuePairs.ToDictionary(kv => kv.Key, kv => kv.Value);
+        }
+
+        public static Dictionary<TKey, List<TValue>> ToDictionary<TKey, TValue>(this IEnumerable<IGrouping<TKey, TValue>> groupings)
+        {
+            return groupings.ToDictionary(g => g.Key, g => g.ToList());
+        }
+
     }
 }
