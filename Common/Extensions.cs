@@ -77,6 +77,8 @@ namespace Common
             yield break;
         }
 
+        // If the "array" is jagged, the result will be too, but
+        // it will have a triangular shape
         public static IEnumerable<IEnumerable<T>> Transpose<T>(this IEnumerable<IEnumerable<T>> src)
         {
             List<IEnumerator<T>> srcEnumerators = src.Select(seq => seq.GetEnumerator()).ToList();
