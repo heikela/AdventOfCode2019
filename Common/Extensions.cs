@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace Common
 {
@@ -41,6 +42,26 @@ namespace Common
         public static IEnumerable<TElem> MinimalElements<TElem, TVal>(this IEnumerable<TElem> src, Func<TElem, TVal> projection) where TVal : IComparable<TVal>, new()
         {
             return BestElements(src, projection, -1);
+        }
+
+        public static IEnumerable<KeyValuePair<int, T>> ZipWithIndex<T>(this IEnumerable<T> src)
+        {
+            int i = 0;
+            foreach (T e in src)
+            {
+                yield return KeyValuePair.Create(i++, e);
+            }
+            yield break;
+        }
+
+        public static IEnumerable<KeyValuePair<BigInteger, T>> ZipWithBigIndex<T>(this IEnumerable<T> src)
+        {
+            BigInteger i = 0;
+            foreach (T e in src)
+            {
+                yield return KeyValuePair.Create(i++, e);
+            }
+            yield break;
         }
 
         public static IEnumerable<List<TElem>> SplitWhen<TElem>(this IEnumerable<TElem> seq,

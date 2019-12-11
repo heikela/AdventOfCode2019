@@ -10,23 +10,15 @@ namespace Common
         public static Dictionary<IntPoint2D, char> Read(IEnumerable<string> lines)
         {
             return lines
-                .Zip(Enumerable.Range(0, lines.Count()))
-                .Select(lineAndY =>
-                {
-                    string line = lineAndY.First;
-                    int y = lineAndY.Second;
-                    return line
-                        .AsEnumerable()
-                        .Zip(Enumerable.Range(0, line.Length))
-                        .Select(charAndX =>
-                        {
-                            char c = charAndX.First;
-                            int x = charAndX.Second;
-                            return (pos: new IntPoint2D(x, y), c);
-                        });
-                })
+                .ZipWithIndex()
+                .Select(indexedLine =>
+                indexedLine.Value
+                    .ZipWithIndex()
+                    .Select(indexedChar => KeyValuePair.Create<IntPoint2D, char>(
+                        new IntPoint2D(indexedChar.Key, indexedLine.Key), indexedChar.Value))
+                )
                 .Flatten()
-                .ToDictionary(kv => kv.pos, kv => kv.c);
+                .ToDictionary();
         }
 
         public static Dictionary<IntPoint2D, char> ReadFromFile(string filename)

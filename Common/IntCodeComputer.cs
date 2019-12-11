@@ -19,12 +19,11 @@ namespace Common
 
         public IntCodeComputer(string input)
         {
-            string[] numbers = input.Split(',');
-            IEnumerable<(int pos, BigInteger val)> addressValuePairs = Enumerable.Range(0, numbers.Length)
-                .Zip(numbers.Select(s => BigInteger.Parse(s)));
-            Memory = addressValuePairs.ToDictionary<(int pos, BigInteger val), BigInteger, BigInteger>(
-                pair => pair.pos,
-                pair => pair.val);
+            Memory = input
+                .Split(',')
+                .Select(BigInteger.Parse)
+                .ZipWithBigIndex()
+                .ToDictionary();
             PC = 0;
             RelativeBase = 0;
         }
