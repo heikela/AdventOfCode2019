@@ -30,26 +30,20 @@ namespace Day10
             }
         }
 
+        static IntPoint2D Direction(IntPoint2D distance)
+        {
+            int gcd = GCD(Math.Abs(distance.X), Math.Abs(distance.Y));
+            return new IntPoint2D(distance.X / gcd, distance.Y / gcd);
+        }
+
         static Dictionary<IntPoint2D, List<IntPoint2D>> AsteroidsByDirectionAndRadius(IntPoint2D asteroid)
         {
             Dictionary<IntPoint2D, List<(IntPoint2D pos, IntPoint2D dist)>> asteroidsAndDistancesByDirection =
-                new Dictionary<IntPoint2D, List<(IntPoint2D, IntPoint2D)>>();
-            foreach (IntPoint2D other in Asteroids)
-            {
-                if (asteroid == other)
-                {
-                    continue;
-                }
-                IntPoint2D distance = other - asteroid;
-                int gcd = GCD(Math.Abs(distance.X), Math.Abs(distance.Y));
-                IntPoint2D direction = new IntPoint2D(distance.X / gcd, distance.Y / gcd);
-                if (!asteroidsAndDistancesByDirection.ContainsKey(direction))
-                {
-                    asteroidsAndDistancesByDirection.Add(direction, new List<(IntPoint2D pos, IntPoint2D dist)>());
-                }
-                asteroidsAndDistancesByDirection[direction].Add((other, distance));
-            }
-
+                Asteroids
+                    .Where(other => other != asteroid)
+                    .Select(other => (pos: other, dist: other - asteroid))
+                    .GroupBy(pair => Direction(pair.dist))
+                    .ToDictionary();
             return asteroidsAndDistancesByDirection
                 .ToDictionary(
                     kv => kv.Key,
