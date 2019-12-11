@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using Common;
-using System.IO;
 using System.Collections.Generic;
 
 namespace Day10
