@@ -1,157 +1,38 @@
 ﻿using System;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using Common;
 using System.IO;
-using static Common.Extensions;
 using static Common.Permutation;
+using System.Numerics;
 
 namespace Day07
 {
-    class IntCodeComputer
-    {
-        List<int> Memory;
-        int PC;
-
-        public IntCodeComputer(string input)
-        {
-            Memory = input.Split(',').Select(s => int.Parse(s)).ToList();
-            PC = 0;
-        }
-
-        int GetParam(int opcode, int param)
-        {
-            int pow = 100;
-            for (int i = 0; i < param; ++i)
-            {
-                pow *= 10;
-            }
-            bool immediate = (opcode / pow) % 10 == 1;
-            int paramValue = Memory[PC + param + 1];
-            if (immediate)
-            {
-                return paramValue;
-            }
-            else
-            {
-                return Memory[paramValue];
-            }
-        }
-
-        void ExecuteBinOp(int opcode, Func<int, int, int> op)
-        {
-            int destAddr = Memory[PC + 3];
-            Memory[destAddr] = op(GetParam(opcode, 0), GetParam(opcode, 1));
-        }
-
-        public (bool, List<int>) RunIntCode(Queue<int> input)
-        {
-            List<int> output = new List<int>();
-            while (true)
-            {
-                int opcode = Memory[PC];
-                switch (opcode % 100)
-                {
-                    case 1:
-                        {
-                            ExecuteBinOp(opcode, (a, b) => a + b);
-                            PC += 4;
-                            break;
-                        }
-                    case 2:
-                        {
-                            ExecuteBinOp(opcode, (a, b) => a * b);
-                            PC += 4;
-                            break;
-                        }
-                    case 3:
-                        {
-                            if (input.Any())
-                            {
-                                Memory[Memory[PC + 1]] = input.Dequeue();
-                                PC += 2;
-                                break;
-                            } else
-                            {
-                                return (true, output);
-                            }
-                        }
-                    case 4:
-                        {
-                            int val = GetParam(opcode, 0);
-                            output.Add(val);
-                            PC += 2;
-                            break;
-                        }
-                    case 5:
-                        {
-                            int val = GetParam(opcode, 0);
-                            int dest = GetParam(opcode, 1);
-                            PC += 3;
-                            if (val != 0)
-                            {
-                                PC = dest;
-                            }
-                            break;
-                        }
-                    case 6:
-                        {
-                            int val = GetParam(opcode, 0);
-                            int dest = GetParam(opcode, 1);
-                            PC += 3;
-                            if (val == 0)
-                            {
-                                PC = dest;
-                            }
-                            break;
-                        }
-                    case 7:
-                        {
-                            ExecuteBinOp(opcode, (a, b) => a < b ? 1 : 0);
-                            PC += 4;
-                            break;
-                        }
-                    case 8:
-                        {
-                            ExecuteBinOp(opcode, (a, b) => a == b ? 1 : 0);
-                            PC += 4;
-                            break;
-                        }
-                    case 99:
-                        return (false, output);
-                    default:
-                        throw new Exception($"ERROR: unknown Opcode {opcode} at address {PC}");
-                }
-            }
-        }
-    }
-
     class Program
     {
         static string AmpProgram;
 
-        static Queue<int> MakeInput(int phase, int input)
+        static Queue<BigInteger> MakeInput(BigInteger phase, BigInteger input)
         {
-            Queue<int> q = new Queue<int>();
+            Queue<BigInteger> q = new Queue<BigInteger>();
             q.Enqueue(phase);
             q.Enqueue(input);
             return q;
         }
 
-        static int RunAmplifiers(List<int> phases)
+        static BigInteger RunAmplifiers(List<int> phases)
         {
-            int prevOutput = 0;
+            BigInteger prevOutput = 0;
             for (int amp = 0; amp < 5; ++amp)
             {
-                Queue<int> input = MakeInput(phases[amp], prevOutput);
+                Queue<BigInteger> input = MakeInput(phases[amp], prevOutput);
                 IntCodeComputer amplifier = new IntCodeComputer(AmpProgram);
                 var result = amplifier.RunIntCode(input);
-                if (result.Item1)
+                if (result.running)
                 {
                     throw new Exception("Program did not halt as expected");
                 }
-                prevOutput = result.Item2.First();
+                prevOutput = result.output.First();
             }
             return prevOutput;
         }
@@ -159,12 +40,12 @@ namespace Day07
         static int RunAmplifiersInLoop(List<int> phases)
         {
             List<IntCodeComputer> amplifiers = new List<IntCodeComputer>();
-            List<Queue<int>> inputs = new List<Queue<int>>();
+            List<Queue<BigInteger>> inputs = new List<Queue<BigInteger>>();
             HashSet<int> runningAmplifiers = Enumerable.Range(0, phases.Count).ToHashSet();
 
             foreach (int phase in phases)
             {
-                Queue<int> q = new Queue<int>();
+                Queue<BigInteger> q = new Queue<BigInteger>();
                 q.Enqueue(phase);
                 inputs.Add(q);
                 amplifiers.Add(new IntCodeComputer(AmpProgram));
@@ -178,12 +59,12 @@ namespace Day07
             {
                 int active = runningAmplifiers.First(i => inputs[i].Any());
                 var result = amplifiers[active].RunIntCode(inputs[active]);
-                if (!result.Item1)
+                if (!result.running)
                 {
                     runningAmplifiers.Remove(active);
                 }
                 int nextAmp = (active + 1) % amplifiers.Count;
-                foreach (int val in result.Item2)
+                foreach (int val in result.output)
                 {
                     inputs[nextAmp].Enqueue(val);
                     if (nextAmp == 0)
