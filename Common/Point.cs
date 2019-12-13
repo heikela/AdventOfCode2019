@@ -120,7 +120,9 @@ namespace Common
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(X, Y, Z);
+            int hash = HashCode.Combine(X, Y, Z);
+//            Console.WriteLine($"Computing hash for point {X}, {Y}, {Z}, got {hash}");
+            return hash;
         }
 
         public int ManhattanDist()
@@ -137,5 +139,10 @@ namespace Common
 		{
 			return (this - other).ManhattanDist();
 		}
+
+        public IntPoint3D Sign()
+        {
+            return new IntPoint3D(Math.Sign(X), Math.Sign(Y), Math.Sign(Z));
+        }
 	}
 }

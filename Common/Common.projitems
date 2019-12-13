@@ -15,5 +15,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Permutations.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SparseGrid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IntCodeComputer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MathUtils.cs" />
   </ItemGroup>
 </Project>
