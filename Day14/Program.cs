@@ -23,7 +23,7 @@ namespace Day14
     {
         static Dictionary<string, long> Surpluses = new Dictionary<string, long>();
         static long OreSpent;
-        static Dictionary<string, List<Conversion>> Conversions = new Dictionary<string, List<Conversion>>();
+        static Dictionary<string, Conversion> Conversions = new Dictionary<string, Conversion>();
 
         static void UseSurplusOrMake(string element, long quantity)
         {
@@ -47,8 +47,7 @@ namespace Day14
 
         static void Make(string element, long quantity)
         {
-            // There's only one in the data for each element!
-            Conversion conversion = Conversions[element].First();
+            Conversion conversion = Conversions[element];
 
             long multiplier = (quantity - 1 + conversion.QuantityProduced) / conversion.QuantityProduced;
             long producedQuantity = multiplier * conversion.QuantityProduced;
@@ -90,15 +89,17 @@ namespace Day14
                             Element = ingredientMatch.Groups[2].Value
                         })
                         .ToList();
-                    return new Conversion()
+                    string elementProduced = leftAndRight.Groups[3].Value;
+                    return KeyValuePair.Create(
+                        elementProduced,
+                        new Conversion()
                         {
-                            ElementProduced = leftAndRight.Groups[3].Value,
+                            ElementProduced = elementProduced,
                             QuantityProduced = int.Parse(leftAndRight.Groups[2].Value),
                             Ingredients = ingredients,
-                        };
+                        });
 
                 })
-                .GroupBy(conversion => conversion.ElementProduced)
                 .ToDictionary();
             Make("FUEL", 1);
             Console.WriteLine($"1 FUEL can be produced from {OreSpent} ORE");
