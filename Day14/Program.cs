@@ -9,13 +9,13 @@ namespace Day14
 {
     struct Ingredient {
         public int Quantity;
-        public string Element;
+        public string Chemical;
     }
 
     class Conversion
     {
         public int QuantityProduced;
-        public string ElementProduced;
+        public string ChemicalProduced;
         public List<Ingredient> Ingredients;
     }
 
@@ -25,45 +25,45 @@ namespace Day14
         static long OreSpent;
         static Dictionary<string, Conversion> Conversions = new Dictionary<string, Conversion>();
 
-        static void UseSurplusOrMake(string element, long quantity)
+        static void UseSurplusOrMake(string chemical, long quantity)
         {
-            long availableSurplus = Surpluses.GetOrElse(element, 0);
+            long availableSurplus = Surpluses.GetOrElse(chemical, 0);
             if (availableSurplus > 0)
             {
                 long surplusUsed = Math.Min(quantity, availableSurplus);
                 quantity -= surplusUsed;
-                Surpluses[element] -= surplusUsed;
+                Surpluses[chemical] -= surplusUsed;
             }
-            if (element == "ORE")
+            if (chemical == "ORE")
             {
                 OreSpent += quantity;
                 return;
             }
             if (quantity > 0)
             {
-                Make(element, quantity);
+                Make(chemical, quantity);
             }
         }
 
-        static void Make(string element, long quantity)
+        static void Make(string chemical, long quantity)
         {
-            Conversion conversion = Conversions[element];
+            Conversion conversion = Conversions[chemical];
 
             long multiplier = (quantity - 1 + conversion.QuantityProduced) / conversion.QuantityProduced;
             long producedQuantity = multiplier * conversion.QuantityProduced;
             long surplusProduced = producedQuantity - quantity;
             foreach (Ingredient i in conversion.Ingredients)
             {
-                UseSurplusOrMake(i.Element, i.Quantity * multiplier);
+                UseSurplusOrMake(i.Chemical, i.Quantity * multiplier);
             }
             if (surplusProduced > 0)
             {
-                if (Surpluses.ContainsKey(element))
+                if (Surpluses.ContainsKey(chemical))
                 {
-                    Surpluses[element] += surplusProduced;
+                    Surpluses[chemical] += surplusProduced;
                 } else
                 {
-                    Surpluses.Add(element, surplusProduced);
+                    Surpluses.Add(chemical, surplusProduced);
                 }
             }
         }
@@ -86,15 +86,15 @@ namespace Day14
                         .Select(ingredientMatch => new Ingredient()
                         {
                             Quantity = int.Parse(ingredientMatch.Groups[1].Value),
-                            Element = ingredientMatch.Groups[2].Value
+                            Chemical = ingredientMatch.Groups[2].Value
                         })
                         .ToList();
-                    string elementProduced = leftAndRight.Groups[3].Value;
+                    string chemicalProduced = leftAndRight.Groups[3].Value;
                     return KeyValuePair.Create(
-                        elementProduced,
+                        chemicalProduced,
                         new Conversion()
                         {
-                            ElementProduced = elementProduced,
+                            ChemicalProduced = chemicalProduced,
                             QuantityProduced = int.Parse(leftAndRight.Groups[2].Value),
                             Ingredients = ingredients,
                         });
