@@ -21,54 +21,50 @@ namespace Day14
 
     class Program
     {
-        static Dictionary<string, int> Surpluses = new Dictionary<string, int>();
+        static Dictionary<string, long> Surpluses = new Dictionary<string, long>();
         static long OreSpent;
         static Dictionary<string, List<Conversion>> Conversions = new Dictionary<string, List<Conversion>>();
 
-        static void UseSurplusOrMake(Ingredient requirement)
+        static void UseSurplusOrMake(string element, long quantity)
         {
-            int availableSurplus = Surpluses.GetOrElse(requirement.Element, 0);
+            long availableSurplus = Surpluses.GetOrElse(element, 0);
             if (availableSurplus > 0)
             {
-                int surplusUsed = Math.Min(requirement.Quantity, availableSurplus);
-                requirement.Quantity -= surplusUsed;
-                Surpluses[requirement.Element] -= surplusUsed;
+                long surplusUsed = Math.Min(quantity, availableSurplus);
+                quantity -= surplusUsed;
+                Surpluses[element] -= surplusUsed;
             }
-            if (requirement.Element == "ORE")
+            if (element == "ORE")
             {
-                OreSpent += requirement.Quantity;
+                OreSpent += quantity;
                 return;
             }
-            if (requirement.Quantity > 0)
+            if (quantity > 0)
             {
-                Make(requirement);
+                Make(element, quantity);
             }
         }
 
-        static void Make(Ingredient requirement)
+        static void Make(string element, long quantity)
         {
             // There's only one in the data for each element!
-            Conversion conversion = Conversions[requirement.Element].First();
+            Conversion conversion = Conversions[element].First();
 
-            while (requirement.Quantity > 0)
+            long multiplier = (quantity - 1 + conversion.QuantityProduced) / conversion.QuantityProduced;
+            long producedQuantity = multiplier * conversion.QuantityProduced;
+            long surplusProduced = producedQuantity - quantity;
+            foreach (Ingredient i in conversion.Ingredients)
             {
-                foreach (Ingredient i in conversion.Ingredients)
+                UseSurplusOrMake(i.Element, i.Quantity * multiplier);
+            }
+            if (surplusProduced > 0)
+            {
+                if (Surpluses.ContainsKey(element))
                 {
-                    // We never produce really large numbers of anything at once
-                    {
-                        UseSurplusOrMake(i);
-                    }
-                }
-                requirement.Quantity -= conversion.QuantityProduced;
-                if (requirement.Quantity < 0)
+                    Surpluses[element] += surplusProduced;
+                } else
                 {
-                    if (Surpluses.ContainsKey(requirement.Element))
-                    {
-                        Surpluses[requirement.Element] -= requirement.Quantity;
-                    } else
-                    {
-                        Surpluses.Add(requirement.Element, -requirement.Quantity);
-                    }
+                    Surpluses.Add(element, surplusProduced);
                 }
             }
         }
@@ -104,29 +100,19 @@ namespace Day14
                 })
                 .GroupBy(conversion => conversion.ElementProduced)
                 .ToDictionary();
-            Ingredient requirement = new Ingredient()
-            {
-                Element = "FUEL",
-                Quantity = 1
-            };
-
-            foreach (var c in Conversions)
-            {
-                Console.WriteLine($"Thre are {c.Value.Count} ways to make {c.Key}");
-            }
-            Make(requirement);
+            Make("FUEL", 1);
             Console.WriteLine($"1 FUEL can be produced from {OreSpent} ORE");
-            int fuelProduced = 1;
-            while (OreSpent < 1000000000000)
+            long fuelProduced = 1;
+            long maxOreNeeded = OreSpent;
+            long trillion = 1000000000000;
+            while (OreSpent < trillion)
             {
-                Make(requirement);
-                fuelProduced += 1;
-                if (Surpluses.All(kv => kv.Value == 0))
-                {
-                    Console.WriteLine($"{fuelProduced} FUEL can be produced from {OreSpent} ORE with no surpluses!");
-                }
+                long fuelLowerBound = Math.Max(1, (trillion - OreSpent) / maxOreNeeded);
+                Make("FUEL", fuelLowerBound);
+                fuelProduced += fuelLowerBound;
             }
             Console.WriteLine($"{fuelProduced} FUEL can be produced from {OreSpent} ORE");
+            Console.WriteLine($"Therefore {fuelProduced - 1} should be the answer");
         }
     }
 }
