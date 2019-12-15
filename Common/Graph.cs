@@ -96,4 +96,52 @@ namespace Common
         }
 
     }
+
+
+
+    public class GraphByFunction
+    {
+        private static IEnumerable<T> RecoverPath<T>(T node, T start, Dictionary<T, T> predecessors) where T: IEquatable<T>
+        {
+            T current = node;
+            Stack<T> reversePath = new Stack<T>();
+            while (!current.Equals(start))
+            {
+                T pred = predecessors[current];
+                reversePath.Push(current);
+                current = pred;
+            }
+            while (reversePath.Any())
+            {
+                yield return reversePath.Pop();
+            }
+            yield break;
+        }
+
+        public static void BfsPathFrom<T>(T start, Func<T, IEnumerable<T>> getEdges, Action<T, List<T>> visitVia) where T : IEquatable<T>
+        {
+            Dictionary<T, T> visited = new Dictionary<T, T>();
+            HashSet<(T, T)> frontier = new HashSet<(T, T)>() { (start, start) };
+            while (frontier.Any())
+            {
+                HashSet<(T, T)> newFrontier = new HashSet<(T,T)>();
+                foreach ((T node, T predecessor) in frontier)
+                {
+                    visited.Add(node, predecessor);
+                    visitVia(node, RecoverPath(node, start, visited).ToList());
+                    foreach (T neighbour in getEdges(node))
+                    {
+                        if (!visited.ContainsKey(neighbour))
+                        {
+                            newFrontier.Add((neighbour, node));
+                        }
+                    }
+                }
+                frontier = newFrontier;
+            }
+        }
+
+
+    }
+
 }
