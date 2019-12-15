@@ -4,53 +4,68 @@ using System.Linq;
 
 namespace Common
 {
-    public class Graph<T>
+    public abstract class Graph<T>
     {
-        Dictionary<T, List<T>> Edges;
-
-        public Graph()
+        public class VisitPath
         {
-            Edges = new Dictionary<T, List<T>>();
+            private int Length;
+            private T Start;
+            private T End;
+            private Dictionary<T, T> Predecessors;
+
+            public VisitPath(T end, T start, int length, Dictionary<T, T> predecessors)
+            {
+                End = end;
+                Length = length;
+                Start = start;
+                Predecessors = predecessors;
+            }
+
+            public int GetLength()
+            {
+                return Length;
+            }
+
+            public IEnumerable<T> GetNodesOnPath()
+            {
+                T current = End;
+                Stack<T> reversePath = new Stack<T>();
+                while (!current.Equals(Start))
+                {
+                    T pred = Predecessors[current];
+                    reversePath.Push(current);
+                    current = pred;
+                }
+                while (reversePath.Any())
+                {
+                    yield return reversePath.Pop();
+                }
+                yield break;
+            }
         }
 
-        public IEnumerable<T> GetNodes()
-        {
-            return Edges.Keys;
-        }
+        public abstract IEnumerable<T> GetNodes();
 
-        public void AddEdge(T from, T to)
-        {
-            if (Edges.ContainsKey(from))
-            {
-                Edges[from].Add(to);
-            }
-            else
-            {
-                Edges.Add(from, new List<T>() { to });
-            }
-            if (!Edges.ContainsKey(to))
-            {
-                Edges.Add(to, new List<T>());
-            }
-        }
+        public abstract IEnumerable<T> GetNeighbours(T node);
 
-        public void BfsFrom(T start, Action<T, int> visitAtDepth)
+        public void BfsFrom(T start, Action<T, VisitPath> visit)
         {
-            HashSet<T> visited = new HashSet<T>();
-            HashSet<T> frontier = new HashSet<T>() { start };
+            Dictionary<T, T> visited = new Dictionary<T, T>();
+            HashSet<(T, T)> frontier = new HashSet<(T, T)>() { (start, start) };
             int depth = 0;
             while (frontier.Any())
             {
-                HashSet<T> newFrontier = new HashSet<T>();
-                foreach (T node in frontier)
+                HashSet<(T, T)> newFrontier = new HashSet<(T, T)>();
+                foreach ((T node, T predecessor) in frontier)
                 {
-                    visitAtDepth(node, depth);
-                    visited.Add(node);
-                    foreach (T neighbour in Edges[node])
+                    visited.Add(node, predecessor);
+                    VisitPath path = new VisitPath(node, start, depth, visited);
+                    visit(node, path);
+                    foreach (T neighbour in GetNeighbours(node))
                     {
-                        if (!visited.Contains(neighbour))
+                        if (!visited.ContainsKey(neighbour))
                         {
-                            newFrontier.Add(neighbour);
+                            newFrontier.Add((neighbour, node));
                         }
                     }
                 }
@@ -70,7 +85,7 @@ namespace Common
                 throw new Exception("Not a DAG");
             }
             partiallyVisited.Add(node);
-            foreach (T neighbour in Edges[node])
+            foreach (T neighbour in GetNeighbours(node))
             {
                 TopologicalSortVisit(fullyVisited, partiallyVisited, sorted, neighbour);
             }
@@ -94,54 +109,61 @@ namespace Common
             }
             yield break;
         }
-
     }
 
-
-
-    public class GraphByFunction
+    public class ConcreteGraph<T> : Graph<T>
     {
-        private static IEnumerable<T> RecoverPath<T>(T node, T start, Dictionary<T, T> predecessors) where T: IEquatable<T>
+        Dictionary<T, List<T>> Edges;
+
+        public ConcreteGraph()
         {
-            T current = node;
-            Stack<T> reversePath = new Stack<T>();
-            while (!current.Equals(start))
-            {
-                T pred = predecessors[current];
-                reversePath.Push(current);
-                current = pred;
-            }
-            while (reversePath.Any())
-            {
-                yield return reversePath.Pop();
-            }
-            yield break;
+            Edges = new Dictionary<T, List<T>>();
         }
 
-        public static void BfsPathFrom<T>(T start, Func<T, IEnumerable<T>> getEdges, Action<T, List<T>> visitVia) where T : IEquatable<T>
+        public override IEnumerable<T> GetNodes()
         {
-            Dictionary<T, T> visited = new Dictionary<T, T>();
-            HashSet<(T, T)> frontier = new HashSet<(T, T)>() { (start, start) };
-            while (frontier.Any())
-            {
-                HashSet<(T, T)> newFrontier = new HashSet<(T,T)>();
-                foreach ((T node, T predecessor) in frontier)
-                {
-                    visited.Add(node, predecessor);
-                    visitVia(node, RecoverPath(node, start, visited).ToList());
-                    foreach (T neighbour in getEdges(node))
-                    {
-                        if (!visited.ContainsKey(neighbour))
-                        {
-                            newFrontier.Add((neighbour, node));
-                        }
-                    }
-                }
-                frontier = newFrontier;
-            }
+            return Edges.Keys;
         }
 
+        public override IEnumerable<T> GetNeighbours(T node)
+        {
+            return Edges[node];
+        }
 
+        public void AddEdge(T from, T to)
+        {
+            if (Edges.ContainsKey(from))
+            {
+                Edges[from].Add(to);
+            }
+            else
+            {
+                Edges.Add(from, new List<T>() { to });
+            }
+            if (!Edges.ContainsKey(to))
+            {
+                Edges.Add(to, new List<T>());
+            }
+        }
+    }
+
+    public class GraphByFunction<T> : Graph<T> where T : IEquatable<T>
+    {
+        private Func<T, IEnumerable<T>> GetEdges;
+
+        public GraphByFunction(Func<T, IEnumerable<T>> getEdges) {
+            GetEdges = getEdges;
+        }
+
+        public override IEnumerable<T> GetNeighbours(T node)
+        {
+            return GetEdges(node);
+        }
+
+        public override IEnumerable<T> GetNodes()
+        {
+            throw new Exception("Not implemented");
+        }
     }
 
 }

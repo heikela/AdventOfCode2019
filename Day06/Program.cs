@@ -12,7 +12,7 @@ namespace Day06
         {
             IEnumerable<string> lines = File.ReadLines("../../../input.txt");
             Regex orbitPattern = new Regex(@"(\w+)\)(\w+)");
-            Graph<string> orbits = new Graph<string>();
+            ConcreteGraph<string> orbits = new ConcreteGraph<string>();
             foreach (string line in lines)
             {
                 Match match = orbitPattern.Match(line);
@@ -25,11 +25,11 @@ namespace Day06
                 }
             }
             int directAndIndirectOrbits = 0;
-            orbits.BfsFrom("COM", (body, depth) => { directAndIndirectOrbits += depth; });
+            orbits.BfsFrom("COM", (body, path) => { directAndIndirectOrbits += path.GetLength(); });
 
             Console.WriteLine($"Part 1: {directAndIndirectOrbits}");
 
-            orbits.BfsFrom("YOU", (body, depth) => { if (body == "SAN") Console.WriteLine($"Part 2: {depth - 2}"); });
+            orbits.BfsFrom("YOU", (body, path) => { if (body == "SAN") Console.WriteLine($"Part 2: {path.GetLength() - 2}"); });
         }
     }
 }
