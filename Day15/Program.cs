@@ -32,6 +32,18 @@ namespace Day15
             new IntPoint2D(1, 0)
         };
 
+        static char ShowTile(Tile t)
+        {
+            switch (t)
+            {
+                case Tile.OxygenSystem: return 'O';
+                case Tile.Room: return '.';
+                case Tile.Wall: return '#';
+                case Tile.Start: return 'S';
+                default: return '?';
+            }
+        }
+
         static IEnumerable<IntPoint2D> ExplorationEdges(IntPoint2D pos)
         {
             if (!Map.ContainsKey(pos))
@@ -148,17 +160,7 @@ namespace Day15
                             throw new Exception($"Unexpected status code {status}");
                     }
                 }
-                SparseGrid.Print(Map, tile =>
-                {
-                    switch (tile)
-                    {
-                        case Tile.OxygenSystem: return 'O';
-                        case Tile.Room: return '.';
-                        case Tile.Wall: return '#';
-                        case Tile.Start: return 'S';
-                        default: return '?';
-                    }
-                });
+                SparseGrid.Print(Map, ShowTile);
 
                 PathToUnexplored = null;
                 GraphByFunction.BfsPathFrom<IntPoint2D>(Pos, ExplorationEdges, ChoosePathToFirstUnexplored);
@@ -166,17 +168,7 @@ namespace Day15
 
             GraphByFunction.BfsPathFrom<IntPoint2D>(new IntPoint2D(), KnownEdges, ShortestDistanceToOxygen);
 
-            SparseGrid.Print(Map, tile =>
-            {
-                switch (tile)
-                {
-                    case Tile.OxygenSystem: return 'O';
-                    case Tile.Room: return '.';
-                    case Tile.Wall: return '#';
-                    case Tile.Start: return 'S';
-                    default: return '?';
-                }
-            });
+            SparseGrid.Print(Map, ShowTile);
 
             Console.WriteLine($"Among the paths randomly explored, the shortest to oxygen is {ShortestDistance} steps");
 
@@ -219,17 +211,7 @@ namespace Day15
                             throw new Exception($"Unexpected status code {status}");
                     }
                 }
-                SparseGrid.Print(Map, tile =>
-                {
-                    switch (tile)
-                    {
-                        case Tile.OxygenSystem: return 'O';
-                        case Tile.Room: return '.';
-                        case Tile.Wall: return '#';
-                        case Tile.Start: return 'S';
-                        default: return '?';
-                    }
-                });
+                SparseGrid.Print(Map, ShowTile);
 
                 PathToUnexplored = null;
                 GraphByFunction.BfsPathFrom<IntPoint2D>(Pos, ExplorationEdges, ChoosePathToFirstUnexplored);
