@@ -19,7 +19,6 @@ namespace Day15
     {
         static Dictionary<IntPoint2D, Tile> Map = new Dictionary<IntPoint2D, Tile>();
         static IntPoint2D Pos = new IntPoint2D();
-        static List<IntPoint2D> PathToUnexplored = null;
         static int ShortestDistance = int.MaxValue;
         static int LongestDistance = int.MinValue;
         static IntPoint2D? OxygenPos = null;
@@ -83,25 +82,6 @@ namespace Day15
             }
         }
 
-        static void ChoosePathToFirstUnexplored(IntPoint2D pos, Graph<IntPoint2D>.VisitPath path)
-        {
-            if (!Map.ContainsKey(pos) && PathToUnexplored == null)
-            {
-                PathToUnexplored = path.GetNodesOnPath().ToList();
-            }
-        }
-
-        static void ShortestDistanceToOxygen(IntPoint2D pos, Graph<IntPoint2D>.VisitPath path)
-        {
-            if (pos == OxygenPos)
-            {
-                if (ShortestDistance > path.GetLength())
-                {
-                    ShortestDistance = path.GetLength();
-                }
-            }
-        }
-
         static void LongestDistanceFromOxygen(IntPoint2D pos, Graph<IntPoint2D>.VisitPath path)
         {
             if (LongestDistance < path.GetLength())
@@ -116,21 +96,21 @@ namespace Day15
 
             Map.Add(Pos, Tile.Start);
 
-            PathToUnexplored = null;
+            List<IntPoint2D> pathToUnexplored = null;
 
             Graph<IntPoint2D> knownMapGraph = new GraphByFunction<IntPoint2D>(KnownEdges);
             Graph<IntPoint2D> explorationGraph = new GraphByFunction<IntPoint2D>(ExplorationEdges);
-            explorationGraph.BfsFrom(Pos, ChoosePathToFirstUnexplored);
+            pathToUnexplored = explorationGraph.ShortestPathTo(Pos, pos => !Map.ContainsKey(pos)).GetNodesOnPath().ToList();
 
             (bool running, List<BigInteger> output) result;
 
             while (OxygenPos == null)
             {
-                while (PathToUnexplored.Any())
+                while (pathToUnexplored.Any())
                 {
                     Queue<BigInteger> input = new Queue<BigInteger>();
-                    IntPoint2D stepTarget = PathToUnexplored.First();
-                    PathToUnexplored.RemoveAt(0);
+                    IntPoint2D stepTarget = pathToUnexplored.First();
+                    pathToUnexplored.RemoveAt(0);
                     IntPoint2D direction = stepTarget - Pos;
                     input.Enqueue(Moves.IndexOf(direction) + 1);
                     result = droidControl.RunIntCode(input);
@@ -165,23 +145,18 @@ namespace Day15
                 }
                 SparseGrid.Print(Map, ShowTile);
 
-                PathToUnexplored = null;
-                explorationGraph.BfsFrom(Pos, ChoosePathToFirstUnexplored);
+                pathToUnexplored = explorationGraph.ShortestPathTo(Pos, pos => !Map.ContainsKey(pos)).GetNodesOnPath().ToList();
             }
 
-            knownMapGraph.BfsFrom(new IntPoint2D(), ShortestDistanceToOxygen);
+            Console.WriteLine($"Among the paths randomly explored, the shortest to oxygen is {knownMapGraph.ShortestPathTo(new IntPoint2D(), OxygenPos.Value).GetLength()} steps");
 
-            SparseGrid.Print(Map, ShowTile);
-
-            Console.WriteLine($"Among the paths randomly explored, the shortest to oxygen is {ShortestDistance} steps");
-
-            while (PathToUnexplored != null)
+            while (pathToUnexplored != null)
             {
-                while (PathToUnexplored.Any())
+                while (pathToUnexplored.Any())
                 {
                     Queue<BigInteger> input = new Queue<BigInteger>();
-                    IntPoint2D stepTarget = PathToUnexplored.First();
-                    PathToUnexplored.RemoveAt(0);
+                    IntPoint2D stepTarget = pathToUnexplored.First();
+                    pathToUnexplored.RemoveAt(0);
                     IntPoint2D direction = stepTarget - Pos;
                     input.Enqueue(Moves.IndexOf(direction) + 1);
                     result = droidControl.RunIntCode(input);
@@ -216,8 +191,7 @@ namespace Day15
                 }
                 SparseGrid.Print(Map, ShowTile);
 
-                PathToUnexplored = null;
-                explorationGraph.BfsFrom(Pos, ChoosePathToFirstUnexplored);
+                pathToUnexplored = explorationGraph.ShortestPathTo(Pos, pos => !Map.ContainsKey(pos))?.GetNodesOnPath()?.ToList();
             }
 
             knownMapGraph.BfsFrom(OxygenPos.Value, LongestDistanceFromOxygen);

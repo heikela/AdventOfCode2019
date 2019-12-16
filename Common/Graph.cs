@@ -48,19 +48,20 @@ namespace Common
 
         public abstract IEnumerable<T> GetNeighbours(T node);
 
-        public void BfsFrom(T start, Action<T, VisitPath> visit)
+        public void BfsFrom(T start, Func<T, VisitPath, bool> visit)
         {
             Dictionary<T, T> visited = new Dictionary<T, T>();
             HashSet<(T, T)> frontier = new HashSet<(T, T)>() { (start, start) };
             int depth = 0;
-            while (frontier.Any())
+            bool earlyExitRequested = false;
+            while (frontier.Any() && !earlyExitRequested)
             {
                 HashSet<(T, T)> newFrontier = new HashSet<(T, T)>();
                 foreach ((T node, T predecessor) in frontier)
                 {
                     visited.Add(node, predecessor);
                     VisitPath path = new VisitPath(node, start, depth, visited);
-                    visit(node, path);
+                    earlyExitRequested = visit(node, path) || earlyExitRequested;
                     foreach (T neighbour in GetNeighbours(node))
                     {
                         if (!visited.ContainsKey(neighbour))
@@ -72,6 +73,39 @@ namespace Common
                 frontier = newFrontier;
                 depth += 1;
             }
+        }
+
+        public void BfsFrom(T start, Action<T, VisitPath> visit)
+        {
+            Func<T, VisitPath, bool> visitNoShortCircuit = (node, path) =>
+            {
+                visit(node, path);
+                return false;
+            };
+            BfsFrom(start, visitNoShortCircuit);
+        }
+
+        public VisitPath ShortestPathTo(T start, T end)
+        {
+            return ShortestPathTo(start, n => n.Equals(end));
+        }
+
+        public VisitPath ShortestPathTo(T start, Func<T, bool> predicate)
+        {
+            VisitPath pathToGoal = null;
+            BfsFrom(start, (node, path) =>
+            {
+                if (predicate(node))
+                {
+                    pathToGoal = path;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            });
+            return pathToGoal;
         }
 
         private void TopologicalSortVisit(HashSet<T> fullyVisited, HashSet<T> partiallyVisited, Stack<T> sorted, T node)
