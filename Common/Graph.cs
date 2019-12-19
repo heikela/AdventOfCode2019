@@ -318,6 +318,42 @@ namespace Common
         }
     }
 
+    public class ConcreteWeightedGraph<T> : WeightedGraph<T>
+    {
+        Dictionary<T, List<(T, int)>> Edges;
+
+        public ConcreteWeightedGraph()
+        {
+            Edges = new Dictionary<T, List<(T, int)>>();
+        }
+
+        public override IEnumerable<T> GetNodes()
+        {
+            return Edges.Keys;
+        }
+
+        public override IEnumerable<(T, int)> GetNeighbours(T node)
+        {
+            return Edges[node];
+        }
+
+        public void AddEdge(T from, T to, int dist)
+        {
+            if (Edges.ContainsKey(from))
+            {
+                Edges[from].Add((to, dist));
+            }
+            else
+            {
+                Edges.Add(from, new List<(T, int)>() { (to, dist) });
+            }
+            if (!Edges.ContainsKey(to))
+            {
+                Edges.Add(to, new List<(T, int)>());
+            }
+        }
+    }
+
     public class WeightedGraphByFunction<T> : WeightedGraph<T> where T : IEquatable<T>
     {
         private Func<T, IEnumerable<(T, int)>> GetEdges;

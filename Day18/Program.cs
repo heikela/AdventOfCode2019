@@ -82,6 +82,7 @@ namespace Day18
     class KeyMaze
     {
         Dictionary<IntPoint2D, char> Map;
+        ConcreteWeightedGraph<(IntPoint2D pos, char tile)> SimplifiedMap;
 
         static List<IntPoint2D> Directions = new List<IntPoint2D>()
         {
@@ -91,9 +92,58 @@ namespace Day18
             new IntPoint2D(1, 0)
         };
 
+        private bool IsPOI(IntPoint2D pos)
+        {
+            char tile = GetTile(pos);
+            return IsKey(tile) || IsDoor(tile) ||
+                tile == '@' ||
+                (tile == '.' && OrthogonalNeighbours(pos).Count(p => CanEverEnter(p)) > 2);
+        }
+
+        private bool CanEverEnter(IntPoint2D pos)
+        {
+            return GetTile(pos) != '#';
+        }
+
+        public bool IsKey(char tile)
+        {
+            return tile >= 'a' && tile <= 'z';
+        }
+
+        private bool IsDoor(char tile)
+        {
+            return tile >= 'A' && tile <= 'Z';
+        }
+
         public KeyMaze(string fileName)
         {
             Map = SparseGrid.ReadFromFile(fileName);
+            SimplifiedMap = new ConcreteWeightedGraph<(IntPoint2D pos, char tile)>();
+
+            Dictionary<(IntPoint2D, char), List<((IntPoint2D, char), int)>> MapGraph = new Dictionary<(IntPoint2D, char), List<((IntPoint2D, char), int)>>();
+
+            foreach (IntPoint2D pos in Map.Keys)
+            {
+                if (CanEverEnter(pos))
+                {
+                    foreach (IntPoint2D neighbour in EventualMovesFrom(pos))
+                    {
+                        MapGraph.Add((pos, Map[pos]), ((neighbour, Map[neighbour]), 1));
+                    }
+                }
+            }
+
+            while (MapGraph.Any(kv => !IsPOI(kv.Key.Item1)))
+            {
+                KeyValuePair<(IntPoint2D pos, IntPoint2D tile), List<((IntPoint2D, char), int)>> toSimplify = MapGraph.First(kv => !IsPOI(kv.Key.Item1));
+            }
+
+            HashSet<IntPoint2D> POIPositions = new HashSet<IntPoint2D>();
+            POIPositions.Add(GetStartPos());
+
+            GraphByFunction<IntPoint2D> EventualMoveGraph = new GraphByFunction<IntPoint2D>(EventualMovesFrom);
+
+            EventualMoveGraph.BfsFrom()
         }
 
         public IntPoint2D GetStartPos()
@@ -106,9 +156,19 @@ namespace Day18
             SparseGrid.Print(Map, c => c);
         }
 
+        public IEnumerable<IntPoint2D> OrthogonalNeighbours(IntPoint2D pos)
+        {
+            return Directions.Select(d => d + pos);
+        }
+
         public IEnumerable<IntPoint2D> CurrentMovesFrom(IntPoint2D pos, HashSet<char> collectedKeys)
         {
-            return Directions.Select(d => d + pos).Where(p => CanEnter(p, collectedKeys));
+            return OrthogonalNeighbours(pos).Where(p => CanEnter(p, collectedKeys));
+        }
+
+        public IEnumerable<IntPoint2D> EventualMovesFrom(IntPoint2D pos)
+        {
+            return OrthogonalNeighbours(pos).Where(CanEverEnter);
         }
 
         private bool CanEnter(IntPoint2D p, HashSet<char> collectedKeys)
@@ -122,7 +182,7 @@ namespace Day18
             {
                 return false;
             }
-            if (tile >= 'a' && tile <= 'z')
+            if (IsKey(tile))
             {
                 return true;
             }
@@ -140,11 +200,6 @@ namespace Day18
         public char GetTile(IntPoint2D pos)
         {
             return Map.GetOrElse(pos, '#');
-        }
-
-        public bool IsKey(char tile)
-        {
-            return tile >= 'a' && tile <= 'z';
         }
 
         public IEnumerable<char> GetAllKeys()
