@@ -332,6 +332,19 @@ namespace Common
             Edges = new Dictionary<T, List<(T, int)>>();
         }
 
+        public ConcreteWeightedGraph(Dictionary<T, Dictionary<T, int>> edges)
+        {
+            Edges = new Dictionary<T, List<(T, int)>>();
+            foreach (var kv in edges)
+            {
+                Edges.Add(kv.Key, new List<(T, int)>());
+                foreach (var edge in kv.Value)
+                {
+                    Edges[kv.Key].Add((edge.Key, edge.Value));
+                }
+            }
+        }
+
         public override IEnumerable<T> GetNodes()
         {
             return Edges.Keys;

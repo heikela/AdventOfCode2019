@@ -53,19 +53,19 @@ namespace Day18
     {
         KeyCollection Current;
         KeyMaze Maze;
-        GraphByFunction<IntPoint2D> AvailableRoutes;
+        WeightedGraphByFunction<IntPoint2D> AvailableRoutes;
 
         public KeyFinder(KeyCollection current, KeyMaze maze)
         {
             Current = current;
             Maze = maze;
-            AvailableRoutes = new GraphByFunction<IntPoint2D>(p => Maze.CurrentMovesFrom(p, Current.GetKeys()));
+            AvailableRoutes = new WeightedGraphByFunction<IntPoint2D>(p => Maze.CurrentMovesFrom(p, Current.GetKeys()));
         }
 
         public IEnumerable<(KeyCollection, int)> PossibleNextKeys()
         {
             List<(KeyCollection, int)> foundKeys = new List<(KeyCollection, int)>();
-            AvailableRoutes.BfsFrom(Current.GetPos(),
+            AvailableRoutes.DijkstraFrom(Current.GetPos(),
                 (pos, path) => {
                     char newKey = Maze.GetTile(pos);
                     if (Maze.IsKey(newKey) && !Current.GetKeys().Contains(newKey))
@@ -82,9 +82,9 @@ namespace Day18
     class KeyMaze
     {
         Dictionary<IntPoint2D, char> Map;
-        ConcreteWeightedGraph<(IntPoint2D pos, char tile)> SimplifiedMap;
+		ConcreteWeightedGraph<IntPoint2D> PoiGraph;
 
-        static List<IntPoint2D> Directions = new List<IntPoint2D>()
+		static List<IntPoint2D> Directions = new List<IntPoint2D>()
         {
             new IntPoint2D(0, -1),
             new IntPoint2D(0, 1),
@@ -118,32 +118,47 @@ namespace Day18
         public KeyMaze(string fileName)
         {
             Map = SparseGrid.ReadFromFile(fileName);
-            SimplifiedMap = new ConcreteWeightedGraph<(IntPoint2D pos, char tile)>();
 
-            Dictionary<(IntPoint2D, char), List<((IntPoint2D, char), int)>> MapGraph = new Dictionary<(IntPoint2D, char), List<((IntPoint2D, char), int)>>();
+			Dictionary<IntPoint2D, Dictionary<IntPoint2D, int>> mapGraph = new Dictionary<IntPoint2D, Dictionary<IntPoint2D, int>>();
 
             foreach (IntPoint2D pos in Map.Keys)
             {
                 if (CanEverEnter(pos))
                 {
-                    foreach (IntPoint2D neighbour in EventualMovesFrom(pos))
+					mapGraph.Add(pos, new Dictionary<IntPoint2D, int>());
+					foreach (IntPoint2D neighbour in EventualMovesFrom(pos))
                     {
-                        MapGraph.Add((pos, Map[pos]), ((neighbour, Map[neighbour]), 1));
+                        mapGraph[pos].Add(neighbour, 1);
                     }
                 }
             }
 
-            while (MapGraph.Any(kv => !IsPOI(kv.Key.Item1)))
+            while (mapGraph.Keys.Any(pos => !IsPOI(pos)))
             {
-                KeyValuePair<(IntPoint2D pos, IntPoint2D tile), List<((IntPoint2D, char), int)>> toSimplify = MapGraph.First(kv => !IsPOI(kv.Key.Item1));
-            }
+                IntPoint2D toSimplify = mapGraph.Keys.First(pos => !IsPOI(pos));
+				// Here we assume summetry, which we have
+				List<KeyValuePair<IntPoint2D, int>> neighbours = mapGraph[toSimplify].ToList();
+				int neighbourCount = neighbours.Count;
+                for (int i = 0; i < neighbourCount; ++i)
+				{
+                    (IntPoint2D pos1, int dist1) = neighbours[i];
+                    for (int j = i + 1; j < neighbourCount; ++j)
+					{
+						(IntPoint2D pos2, int dist2) = neighbours[j];
+						int existingDist = mapGraph[pos1].GetOrElse(pos2, int.MaxValue);
+						int distanceThroughCurrent = dist1 + dist2;
+                        if (distanceThroughCurrent < existingDist)
+						{
+							mapGraph[pos1].AddOrSet(pos2, distanceThroughCurrent);
+							mapGraph[pos2].AddOrSet(pos1, distanceThroughCurrent);
+						}
+					}
+					mapGraph[pos1].Remove(toSimplify);
+				}
+                mapGraph.Remove(toSimplify);
+			}
 
-            HashSet<IntPoint2D> POIPositions = new HashSet<IntPoint2D>();
-            POIPositions.Add(GetStartPos());
-
-            GraphByFunction<IntPoint2D> EventualMoveGraph = new GraphByFunction<IntPoint2D>(EventualMovesFrom);
-
-            EventualMoveGraph.BfsFrom()
+			PoiGraph = new ConcreteWeightedGraph<IntPoint2D>(mapGraph);
         }
 
         public IntPoint2D GetStartPos()
@@ -161,9 +176,9 @@ namespace Day18
             return Directions.Select(d => d + pos);
         }
 
-        public IEnumerable<IntPoint2D> CurrentMovesFrom(IntPoint2D pos, HashSet<char> collectedKeys)
+        public IEnumerable<(IntPoint2D pos, int dist)> CurrentMovesFrom(IntPoint2D pos, HashSet<char> collectedKeys)
         {
-            return OrthogonalNeighbours(pos).Where(p => CanEnter(p, collectedKeys));
+            return PoiGraph.GetNeighbours(pos).Where<(IntPoint2D p, int dist)>(neighbour => CanEnter(neighbour.p, collectedKeys));
         }
 
         public IEnumerable<IntPoint2D> EventualMovesFrom(IntPoint2D pos)
@@ -220,7 +235,6 @@ namespace Day18
             Start = new KeyCollection(Maze.GetStartPos());
             KeyCollectionOrders = new WeightedGraphByFunction<KeyCollection>(NextKeysPossible);
             Maze.Print();
-            throw new Exception("Exiting early");
         }
 
         IEnumerable<(KeyCollection, int)> NextKeysPossible(KeyCollection current)
