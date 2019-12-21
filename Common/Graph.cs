@@ -209,7 +209,7 @@ namespace Common
     }
 
 
-    public abstract class WeightedGraph<T>
+    public abstract class WeightedGraph<T> where T: IEquatable<T>
     {
         public class VisitPath
         {
@@ -323,7 +323,7 @@ namespace Common
         }
     }
 
-    public class ConcreteWeightedGraph<T> : WeightedGraph<T>
+    public class ConcreteWeightedGraph<T> : WeightedGraph<T> where T : IEquatable<T>
     {
         Dictionary<T, List<(T, int)>> Edges;
 

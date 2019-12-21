@@ -5,84 +5,11 @@ using System.Linq;
 
 namespace Day18
 {
-    class KeyCollection : IEquatable<KeyCollection>
-    {
-        IntPoint2D Pos;
-        int MovesSpent;
-        HashSet<char> CollectedKeys;
-
-        public KeyCollection(IntPoint2D pos)
-        {
-            Pos = pos;
-            MovesSpent = 0;
-            CollectedKeys = new HashSet<char>();
-        }
-
-        public KeyCollection(KeyCollection previous, IntPoint2D pos, int additionalMoves, char additionalKey)
-        {
-            Pos = pos;
-            MovesSpent = previous.MovesSpent + additionalMoves;
-            CollectedKeys = previous.CollectedKeys.ToHashSet();
-            CollectedKeys.Add(additionalKey);
-        }
-
-        public HashSet<char> GetKeys()
-        {
-            return CollectedKeys;
-        }
-
-        public IntPoint2D GetPos()
-        {
-            return Pos;
-        }
-
-        public int GetMoves()
-        {
-            return MovesSpent;
-        }
-
-        bool IEquatable<KeyCollection>.Equals(KeyCollection other)
-        {
-            return other.Pos == Pos
-                && other.MovesSpent == MovesSpent
-                && other.CollectedKeys.SetEquals(CollectedKeys);
-        }
-    }
-
-    class KeyFinder
-    {
-        KeyCollection Current;
-        KeyMaze Maze;
-        WeightedGraphByFunction<IntPoint2D> AvailableRoutes;
-
-        public KeyFinder(KeyCollection current, KeyMaze maze)
-        {
-            Current = current;
-            Maze = maze;
-            AvailableRoutes = new WeightedGraphByFunction<IntPoint2D>(p => Maze.CurrentMovesFrom(p, Current.GetKeys()));
-        }
-
-        public IEnumerable<(KeyCollection, int)> PossibleNextKeys()
-        {
-            List<(KeyCollection, int)> foundKeys = new List<(KeyCollection, int)>();
-            AvailableRoutes.DijkstraFrom(Current.GetPos(),
-                (pos, path) => {
-                    char newKey = Maze.GetTile(pos);
-                    if (Maze.IsKey(newKey) && !Current.GetKeys().Contains(newKey))
-                    {
-                        foundKeys.Add((
-                            new KeyCollection(Current, pos, path.GetLength(), newKey),
-                            path.GetLength()));
-                    }
-                });
-            return foundKeys;
-        }
-    }
-
     class KeyMaze
     {
         Dictionary<IntPoint2D, char> Map;
 		ConcreteWeightedGraph<IntPoint2D> PoiGraph;
+        public uint AllKeys { get; private set; }
 
 		static List<IntPoint2D> Directions = new List<IntPoint2D>()
         {
@@ -118,6 +45,7 @@ namespace Day18
         public KeyMaze(string fileName)
         {
             Map = SparseGrid.ReadFromFile(fileName);
+            AllKeys = 0;
 
 			Dictionary<IntPoint2D, Dictionary<IntPoint2D, int>> mapGraph = new Dictionary<IntPoint2D, Dictionary<IntPoint2D, int>>();
 
@@ -126,6 +54,10 @@ namespace Day18
                 if (CanEverEnter(pos))
                 {
 					mapGraph.Add(pos, new Dictionary<IntPoint2D, int>());
+                    if (IsKey(Map[pos]))
+                    {
+                        AllKeys = State.AddKey(AllKeys, Map[pos]);
+                    }
 					foreach (IntPoint2D neighbour in EventualMovesFrom(pos))
                     {
                         mapGraph[pos].Add(neighbour, 1);
@@ -176,9 +108,23 @@ namespace Day18
             return Directions.Select(d => d + pos);
         }
 
-        public IEnumerable<(IntPoint2D pos, int dist)> CurrentMovesFrom(IntPoint2D pos, HashSet<char> collectedKeys)
+        public IEnumerable<(State, int)> CurrentMovesFrom(State s)
         {
-            return PoiGraph.GetNeighbours(pos).Where<(IntPoint2D p, int dist)>(neighbour => CanEnter(neighbour.p, collectedKeys));
+            return PoiGraph
+                .GetNeighbours(s.Pos)
+                .Where<(IntPoint2D p, int dist)>(neighbour => CanEnter(new State(s, neighbour.p)))
+                .Select(neighbour => {
+                    State newState;
+                    if (IsKey(Map[neighbour.p]))
+                    {
+                        newState = new State(s, neighbour.p, Map[neighbour.p]);
+                    }
+                    else
+                    {
+                        newState = new State(s, neighbour.p);
+                    }
+                    return (newState, neighbour.dist);
+                });
         }
 
         public IEnumerable<IntPoint2D> EventualMovesFrom(IntPoint2D pos)
@@ -186,9 +132,9 @@ namespace Day18
             return OrthogonalNeighbours(pos).Where(CanEverEnter);
         }
 
-        private bool CanEnter(IntPoint2D p, HashSet<char> collectedKeys)
+        private bool CanEnter(State s)
         {
-            char tile = GetTile(p);
+            char tile = GetTile(s.Pos);
             if (tile == '.')
             {
                 return true;
@@ -203,7 +149,7 @@ namespace Day18
             }
             if (tile >= 'A' && tile <= 'Z')
             {
-                return collectedKeys.Contains(tile.ToString().ToLower()[0]);
+                return s.CanOpenDoor(tile);
             }
             if (tile == '@')
             {
@@ -216,42 +162,98 @@ namespace Day18
         {
             return Map.GetOrElse(pos, '#');
         }
+    }
 
-        public IEnumerable<char> GetAllKeys()
+    struct State : IEquatable<State>
+    {
+        public readonly IntPoint2D Pos;
+        public readonly uint Keys;
+
+        public State(IntPoint2D pos)
         {
-            return Map.Values.Where(IsKey);
+            Pos = pos;
+            Keys = 0;
+        }
+
+        public State(State previous, IntPoint2D newPos)
+        {
+            Pos = newPos;
+            Keys = previous.Keys;
+        }
+
+        public State(State previous, IntPoint2D newPos, char additionalKey)
+        {
+            Pos = newPos;
+            Keys = AddKey(previous.Keys, additionalKey);
+        }
+
+        public static bool operator ==(State left, State right) =>
+        Equals(left, right);
+
+        public static bool operator !=(State left, State right) =>
+            !Equals(left, right);
+
+        public override bool Equals(object obj) =>
+            (obj is State s) && Equals(s);
+
+        public bool Equals(State other) =>
+            (Pos, Keys) == (other.Pos, other.Keys);
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Pos, Keys);
+        }
+
+        public static uint AddKey(uint keys, char c)
+        {
+            return keys |= BitMask(c, 'a');
+        }
+
+        public bool CanOpenDoor(char c)
+        {
+            return (Keys & BitMask(c, 'A')) != 0;
+        }
+
+        private static uint BitMask(char c, char categoryStart)
+        {
+            return 1u << (c - categoryStart);
+        }
+
+        public bool HasAllKeysIn(uint otherKeys)
+        {
+            return (otherKeys & (~Keys)) == 0;
         }
     }
 
     class MazeSolver
     {
-        WeightedGraphByFunction<KeyCollection> KeyCollectionOrders;
+        WeightedGraphByFunction<State> InterestingStates;
         KeyMaze Maze;
-        KeyCollection Start;
+        State Start;
 
         public MazeSolver(string fileName)
         {
             Maze = new KeyMaze(fileName);
-            Start = new KeyCollection(Maze.GetStartPos());
-            KeyCollectionOrders = new WeightedGraphByFunction<KeyCollection>(NextKeysPossible);
+            Start = new State(Maze.GetStartPos());
+            InterestingStates = new WeightedGraphByFunction<State>(NextPOIsPossible);
             Maze.Print();
         }
 
-        IEnumerable<(KeyCollection, int)> NextKeysPossible(KeyCollection current)
+        private IEnumerable<(State, int)> NextPOIsPossible(State s)
         {
-            return new KeyFinder(current, Maze).PossibleNextKeys();
+            return Maze.CurrentMovesFrom(s);
         }
 
         public int Solve()
         {
             int bestLength = int.MaxValue;
-            KeyCollectionOrders.DijkstraFrom(Start,
-                (keys, earlier) =>
+            InterestingStates.DijkstraFrom(Start,
+                (state, earlier) =>
                 {
-                    if (keys.GetKeys().IsSupersetOf(Maze.GetAllKeys())) {
-                        if (keys.GetMoves() < bestLength)
+                    if (state.HasAllKeysIn(Maze.AllKeys)) {
+                        if (earlier.GetLength() < bestLength)
                         {
-                            bestLength = keys.GetMoves();
+                            bestLength = earlier.GetLength();
                         }
                     }
                 });
