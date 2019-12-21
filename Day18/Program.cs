@@ -42,9 +42,22 @@ namespace Day18
             return tile >= 'A' && tile <= 'Z';
         }
 
-        public KeyMaze(string fileName)
+        public KeyMaze(string fileName, bool separateQuadrants = false)
         {
             Map = SparseGrid.ReadFromFile(fileName);
+            if (separateQuadrants)
+            {
+                IntPoint2D middle = GetStartPos().First();
+                Map.AddOrSet(middle + new IntPoint2D(-1, -1), '@');
+                Map.AddOrSet(middle + new IntPoint2D(1, -1), '@');
+                Map.AddOrSet(middle + new IntPoint2D(1, 1), '@');
+                Map.AddOrSet(middle + new IntPoint2D(-1, 1), '@');
+                Map.AddOrSet(middle + new IntPoint2D(1, 0), '#');
+                Map.AddOrSet(middle + new IntPoint2D(-1, 0), '#');
+                Map.AddOrSet(middle + new IntPoint2D(0, 1), '#');
+                Map.AddOrSet(middle + new IntPoint2D(0, -1), '#');
+                Map.AddOrSet(middle, '#');
+            }
             AllKeys = 0;
 
 			Dictionary<IntPoint2D, Dictionary<IntPoint2D, int>> mapGraph = new Dictionary<IntPoint2D, Dictionary<IntPoint2D, int>>();
@@ -93,9 +106,9 @@ namespace Day18
 			PoiGraph = new ConcreteWeightedGraph<IntPoint2D>(mapGraph);
         }
 
-        public IntPoint2D GetStartPos()
+        public IEnumerable<IntPoint2D> GetStartPos()
         {
-            return Map.First(kv => kv.Value == '@').Key;
+            return Map.Where(kv => kv.Value == '@').Select(kv => kv.Key);
         }
 
         public void Print()
@@ -169,10 +182,10 @@ namespace Day18
         public readonly IntPoint2D Pos;
         public readonly uint Keys;
 
-        public State(IntPoint2D pos)
+        public State(IntPoint2D pos, uint keys = 0)
         {
             Pos = pos;
-            Keys = 0;
+            Keys = keys;
         }
 
         public State(State previous, IntPoint2D newPos)
@@ -225,6 +238,70 @@ namespace Day18
         }
     }
 
+    struct FourRobotState : IEquatable<FourRobotState>
+    {
+        public readonly List<IntPoint2D> Pos;
+        public readonly uint Keys;
+
+        public FourRobotState(IEnumerable<IntPoint2D> pos)
+        {
+            if (pos.Count() != 4)
+            {
+                throw new Exception("Must supply four robot positions");
+            }
+            Pos = pos.ToList();
+            Keys = 0;
+        }
+
+        public FourRobotState(FourRobotState previous, int botToMove, State robotState)
+        {
+            Pos = previous.Pos.ToList();
+            Pos[botToMove] = robotState.Pos;
+            Keys = robotState.Keys;
+        }
+
+        public State GetRobotState(int robot) {
+            return new State(Pos[robot], Keys);
+        }
+
+        public static bool operator ==(FourRobotState left, FourRobotState right) =>
+        Equals(left, right);
+
+        public static bool operator !=(FourRobotState left, FourRobotState right) =>
+            !Equals(left, right);
+
+        public override bool Equals(object obj) =>
+            (obj is FourRobotState s) && Equals(s);
+
+        public bool Equals(FourRobotState other) =>
+            (Pos, Keys) == (other.Pos, other.Keys);
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Pos[0], Pos[1], Pos[2], Pos[3], Keys);
+        }
+
+        public static uint AddKey(uint keys, char c)
+        {
+            return keys |= BitMask(c, 'a');
+        }
+
+        public bool CanOpenDoor(char c)
+        {
+            return (Keys & BitMask(c, 'A')) != 0;
+        }
+
+        private static uint BitMask(char c, char categoryStart)
+        {
+            return 1u << (c - categoryStart);
+        }
+
+        public bool HasAllKeysIn(uint otherKeys)
+        {
+            return (otherKeys & (~Keys)) == 0;
+        }
+    }
+
     class MazeSolver
     {
         WeightedGraphByFunction<State> InterestingStates;
@@ -234,7 +311,7 @@ namespace Day18
         public MazeSolver(string fileName)
         {
             Maze = new KeyMaze(fileName);
-            Start = new State(Maze.GetStartPos());
+            Start = new State(Maze.GetStartPos().First());
             InterestingStates = new WeightedGraphByFunction<State>(NextPOIsPossible);
             Maze.Print();
         }
@@ -261,12 +338,58 @@ namespace Day18
         }
     }
 
+    public class FourQuadrantSolver
+    {
+        WeightedGraphByFunction<FourRobotState> InterestingStates;
+        KeyMaze Maze;
+        FourRobotState Start;
+
+        public FourQuadrantSolver(string fileName)
+        {
+            Maze = new KeyMaze(fileName, true);
+            Start = new FourRobotState(Maze.GetStartPos());
+            InterestingStates = new WeightedGraphByFunction<FourRobotState>(NextPOIsPossible);
+            Maze.Print();
+        }
+
+        private IEnumerable<(FourRobotState, int)> NextPOIsPossible(FourRobotState s)
+        {
+            for (int i = 0; i < 4; ++i)
+            {
+                IEnumerable<(State, int)> movesForRobot = Maze.CurrentMovesFrom(s.GetRobotState(i));
+                foreach ((State robotState, int moveLength) move in movesForRobot)
+                {
+                    yield return (new FourRobotState(s, i, move.robotState), move.moveLength);
+                }
+            }
+        }
+
+        public int Solve()
+        {
+            int bestLength = int.MaxValue;
+            InterestingStates.DijkstraFrom(Start,
+                (state, earlier) =>
+                {
+                    if (state.HasAllKeysIn(Maze.AllKeys))
+                    {
+                        if (earlier.GetLength() < bestLength)
+                        {
+                            bestLength = earlier.GetLength();
+                        }
+                    }
+                });
+            return bestLength;
+        }
+    }
+
     class Program
     {
         static void Main(string[] args)
         {
             MazeSolver solver = new MazeSolver("../../../input.txt");
             Console.WriteLine(solver.Solve());
+            FourQuadrantSolver solver2 = new FourQuadrantSolver("../../../input.txt");
+            Console.WriteLine(solver2.Solve());
         }
     }
 }
