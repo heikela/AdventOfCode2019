@@ -9,6 +9,8 @@ namespace Day21
 {
     class Program
     {
+        static string ProgrammerProgram;
+
         static Queue<BigInteger> MakeInput(IEnumerable<string> asciiLines)
         {
             Queue<BigInteger> inputs = new Queue<BigInteger>();
@@ -23,10 +25,38 @@ namespace Day21
             return inputs;
         }
 
+        static void HandleOutput(IEnumerable<BigInteger> output)
+        {
+            foreach (BigInteger n in output)
+            {
+                if (n > 255)
+                {
+                    Console.WriteLine($"Got hull damage reading {n}");
+                }
+                else
+                {
+                    if (n == 10)
+                    {
+                        Console.WriteLine();
+                    }
+                    else
+                    {
+                        Console.Write((char)n);
+                    }
+                }
+            }
+        }
+
+        static void TestJumpProgram(IEnumerable<string> program)
+        {
+            IntCodeComputer computer = new IntCodeComputer(ProgrammerProgram);
+            (bool running, List<BigInteger> output) = computer.RunIntCode(MakeInput(program));
+            HandleOutput(output);
+        }
+
         static void Main(string[] args)
         {
-            string program = File.ReadLines("../../../input.txt").First();
-            IntCodeComputer computer = new IntCodeComputer(program);
+            ProgrammerProgram = File.ReadLines("../../../input.txt").First();
 
             //"D and not (A & B & C)"
             List<string> jumpProgram = new List<string>()
@@ -41,25 +71,25 @@ namespace Day21
                 "AND T J",
                 "WALK"
             };
+            TestJumpProgram(jumpProgram);
 
-            (bool running, List<BigInteger> output) = computer.RunIntCode(MakeInput(jumpProgram));
-            foreach (BigInteger n in output)
+            //"D and not (A & B & C) and (E or H)"
+            List<string> part2Program = new List<string>()
             {
-                if (n > 255)
-                {
-                    Console.WriteLine($"Got hull damage reading {n}");
-                }
-                else
-                {
-                    if (n == 10)
-                    {
-                        Console.WriteLine();
-                    }
-                    else {
-                        Console.Write((char)n);
-                    }
-                }
-            }
+                "NOT A T", 
+                "NOT T T",
+                "AND B T",
+                "AND C T",
+                "NOT T J",
+                "AND D J",
+                "NOT E T",
+                "NOT T T",
+                "OR H T",
+                "AND T J",
+                "RUN"
+            };
+            TestJumpProgram(part2Program);
+
         }
     }
 }
