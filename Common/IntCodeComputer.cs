@@ -86,10 +86,16 @@ namespace Common
                     DecodeParam(opcode, 1).Get()));
         }
 
-        public (bool running, List<BigInteger> output) RunIntCode(Queue<BigInteger> input)
+        /*        public (bool running, List<BigInteger> output) RunIntCode(IEnumerable<int> input)
+                {
+
+                }
+                */
+        public (bool running, List<BigInteger> output) RunIntCode(Queue<BigInteger> input, bool blockForInput = true, int maxSteps = int.MaxValue)
         {
             List<BigInteger> output = new List<BigInteger>();
-            while (true)
+            int cycles = 0;
+            while (cycles++ < maxSteps)
             {
                 BigInteger opcode = GetMem(PC);
                 switch ((int)(opcode % 100))
@@ -108,15 +114,22 @@ namespace Common
                         }
                     case 3:
                         {
-                            if (input.Any())
-                            {
-                                DecodeParam(opcode, 0).Set(input.Dequeue());
-                                PC += 2;
-                                break;
-                            }
-                            else
+                            if (!input.Any() && blockForInput)
                             {
                                 return (true, output);
+                            } else
+                            {
+                                BigInteger val;
+                                if (input.Any())
+                                {
+                                    val = input.Dequeue();
+                                } else
+                                {
+                                    val = -1;
+                                }
+                                DecodeParam(opcode, 0).Set(val);
+                                PC += 2;
+                                break;
                             }
                         }
                     case 4:
@@ -172,6 +185,7 @@ namespace Common
                         throw new Exception($"ERROR: unknown Opcode {opcode} at address {PC}");
                 }
             }
+            return (true, output);
         }
     }
 }
