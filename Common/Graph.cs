@@ -321,6 +321,54 @@ namespace Common
             });
             return pathToGoal;
         }
+
+        public int AStar(T start, Func<T, int> heuristic, Func<T, bool> predicate)
+        {
+            HashSet<T> visited = new HashSet<T>();
+            IPriorityQueue<T, int> frontier = new SimplePriorityQueue<T, int>();
+
+            frontier.Enqueue(start, 0);
+            // Do we need to keep track of where we came from, perhaps not...
+            Dictionary<T, int> cost = new Dictionary<T, int>();
+            cost.Add(start, 0);
+
+            Dictionary<T, int> remainingCost = new Dictionary<T, int>();
+            remainingCost.Add(start, heuristic(start));
+
+            Dictionary<T, int> costEstimate = new Dictionary<T, int>();
+            costEstimate.Add(start, cost[start] + remainingCost[start]);
+
+            while (frontier.Count > 0)
+            {
+                var current = frontier.Dequeue();
+                if (predicate(current))
+                {
+                    return costEstimate[current];
+                }
+                visited.Add(current);
+                foreach ((T neighbour, int neighbourCost) n in GetNeighbours(current))
+                {
+                    if (!visited.Contains(n.neighbour))
+                    {
+                        int tentativeCost = cost[current] + n.neighbourCost;
+                        int newEstimate = tentativeCost + heuristic(n.neighbour);
+                        if (!frontier.Contains(n.neighbour))
+                        {
+                            frontier.Enqueue(n.neighbour, tentativeCost + heuristic(n.neighbour));
+                            cost.Add(n.neighbour, tentativeCost);
+                            costEstimate.Add(n.neighbour, newEstimate);
+                        }
+                        else if (tentativeCost < cost[n.neighbour])
+                        {
+                            cost[n.neighbour] = tentativeCost;
+                            costEstimate[n.neighbour] = newEstimate;
+                            frontier.UpdatePriority(n.neighbour, newEstimate);
+                        }
+                    }
+                }
+            }
+            return -1;
+        }
     }
 
     public class ConcreteWeightedGraph<T> : WeightedGraph<T> where T : IEquatable<T>

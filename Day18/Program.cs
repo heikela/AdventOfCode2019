@@ -23,8 +23,7 @@ namespace Day18
         {
             char tile = GetTile(pos);
             return IsKey(tile) || IsDoor(tile) ||
-                tile == '@' ||
-                (tile == '.' && OrthogonalNeighbours(pos).Count(p => CanEverEnter(p)) > 2);
+                tile == '@';
         }
 
         private bool CanEverEnter(IntPoint2D pos)
@@ -364,21 +363,22 @@ namespace Day18
             }
         }
 
+        private static int CountBits(uint n)
+        {
+            int c = 0;
+            while (n != 0)
+            {
+                ++c;
+                n = n & (n - 1);
+            }
+            return c;
+        }
+
         public int Solve()
         {
-            int bestLength = int.MaxValue;
-            InterestingStates.DijkstraFrom(Start,
-                (state, earlier) =>
-                {
-                    if (state.HasAllKeysIn(Maze.AllKeys))
-                    {
-                        if (earlier.GetLength() < bestLength)
-                        {
-                            bestLength = earlier.GetLength();
-                        }
-                    }
-                });
-            return bestLength;
+            return InterestingStates.AStar(Start,
+                state => 2 * CountBits(Maze.AllKeys & (~state.Keys)),
+                state => state.HasAllKeysIn(Maze.AllKeys));
         }
     }
 
