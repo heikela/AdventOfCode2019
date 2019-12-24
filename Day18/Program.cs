@@ -144,6 +144,11 @@ namespace Day18
             return OrthogonalNeighbours(pos).Where(CanEverEnter);
         }
 
+        public IEnumerable<(IntPoint2D pos, int dist)> SpeculativeMovesFrom(IntPoint2D pos)
+        {
+            return PoiGraph.GetNeighbours(pos);
+        }
+
         private bool CanEnter(State s)
         {
             char tile = GetTile(s.Pos);
@@ -382,13 +387,97 @@ namespace Day18
         }
     }
 
+
+    public class FourQuadrantSolver2
+    {
+        KeyMaze Maze;
+        WeightedGraphByFunction<State> InterestingStates;
+        List<IntPoint2D> Starts;
+        List<uint> AllKeysByQuadrant;
+        List<List<char>> OptimalPaths;
+        List<int> OptimalPathLengths;
+
+        public FourQuadrantSolver2(string fileName)
+        {
+            Maze = new KeyMaze(fileName, true);
+            Starts = Maze.GetStartPos().ToList();
+            InterestingStates = new WeightedGraphByFunction<State>(NextStatesPossibleWithTheRightKeys);
+            AllKeysByQuadrant = Starts.Select(x => 0u).ToList();
+            OptimalPaths = Starts.Select<IntPoint2D, List<char>>(x => null).ToList();
+            OptimalPathLengths = Starts.Select(x => 0).ToList();
+        }
+
+        private IEnumerable<(State, int)> NextStatesPossibleWithTheRightKeys(State s)
+        {
+            {
+                return Maze
+                    .SpeculativeMovesFrom(s.Pos)
+                    .Select(posDist => {
+                        char tile = Maze.GetTile(posDist.pos);
+                        if (Maze.IsKey(tile))
+                        {
+                            return (new State(s, posDist.pos, tile), posDist.dist);
+                        }
+                        else
+                        {
+                            return (new State(s, posDist.pos), posDist.dist);
+                        }
+                    });
+            }
+        }
+
+        public int Solve()
+        {
+            foreach (int i in Enumerable.Range(0, Starts.Count))
+            {
+                State start = new State(Starts[i]);
+                InterestingStates.DijkstraFrom(start, (s, path) => FindKeys(s, path, i));
+            }
+            foreach (int i in Enumerable.Range(0, Starts.Count))
+            {
+                State start = new State(Starts[i]);
+                InterestingStates.DijkstraFrom(start, (s, path) => FindAbsoluteShortest(s, path, i));
+            }
+            while (OptimalPaths.Any(path => path.Count > 0 && Maze.IsKey(path[0])))
+            {
+                var path = OptimalPaths.First(path => path.Count > 0 && Maze.IsKey(path[0]));
+                char key = path[0];
+                path.RemoveAt(0);
+                OptimalPaths.ForEach(path => path.RemoveAll(c => c == (char)(key + 'A' - 'a')));
+            }
+            if (OptimalPaths.Any(path => path.Count > 0)) {
+                throw new Exception("Ignoring doors and hoping that other bots open them didn't work for this maze");
+            }
+            return OptimalPathLengths.Sum();
+        }
+
+        private void FindKeys(State s, WeightedGraph<State>.VisitPath path, int quadrant)
+        {
+            if (s.HasAllKeysIn(AllKeysByQuadrant[quadrant]))
+            {
+                AllKeysByQuadrant[quadrant] = s.Keys;
+            }
+        }
+
+        private bool FindAbsoluteShortest(State s, WeightedGraph<State>.VisitPath path, int quadrant)
+        {
+            if (s.HasAllKeysIn(AllKeysByQuadrant[quadrant]))
+            {
+                OptimalPaths[quadrant] = path.GetNodesOnPath().Select(s => Maze.GetTile(s.Pos)).ToList();
+                OptimalPathLengths[quadrant] = path.GetLength();
+                return true;
+            }
+            return false;
+        }
+    }
+
     class Program
     {
         static void Main(string[] args)
         {
             MazeSolver solver = new MazeSolver("../../../input.txt");
             Console.WriteLine(solver.Solve());
-            FourQuadrantSolver solver2 = new FourQuadrantSolver("../../../input.txt");
+            FourQuadrantSolver2 solver2 = new FourQuadrantSolver2("../../../input.txt");
             Console.WriteLine(solver2.Solve());
         }
     }
