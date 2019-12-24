@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OptimizedPriorityQueue" Version="4.2.0" />
+  </ItemGroup>
+  <Import Project="..\Common\Common.projitems" Label="Shared" Condition="Exists('..\Common\Common.projitems')" />
+</Project>
