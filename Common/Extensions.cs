@@ -7,6 +7,17 @@ namespace Common
 {
     public static class Extensions
     {
+        public static IEnumerable<TResult> Scan<TResult, T>(this IEnumerable<T> source, TResult initial, Func<TResult, T, TResult> aggregator)
+        {
+            TResult currentResult = initial;
+            foreach (T element in source)
+            {
+                currentResult = aggregator(currentResult, element);
+                yield return currentResult;
+            }
+            yield break;
+        }
+
         private static IEnumerable<TElem> BestElements<TElem, TVal>(
             IEnumerable<TElem> src,
             Func<TElem, TVal> projection,
