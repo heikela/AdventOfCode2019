@@ -51,8 +51,6 @@ namespace Day02
         static void Main(string[] args)
         {
             string input = File.ReadLines("../../../input.txt").First();
-            //string input = "1,9,10,3,2,3,11,0,99,30,40,50";
-            //string input = "1,0,0,0,99";
 
             Console.WriteLine($"Part1 = {RunIntCode(input, 12, 2)}");
             for (int noun = 0; noun < 100; ++noun)
