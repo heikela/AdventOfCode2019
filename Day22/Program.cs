@@ -10,7 +10,6 @@ namespace Day22
     class Shuffle {
         long DeckSize;
         long PostCut;
-        long PreCut;
         long Stride;
 
         public Shuffle(long deckSize)
