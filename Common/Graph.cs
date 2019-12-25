@@ -61,6 +61,11 @@ namespace Common
                 Dictionary<T, T> newFrontier = new Dictionary<T, T>();
                 foreach ((T node, T predecessor) in frontier)
                 {
+                    if (visited.ContainsKey(node))
+                    {
+                        // How does this happen?
+                        continue;
+                    }
                     visited.Add(node, predecessor);
                     VisitPath path = new VisitPath(node, start, depth, visited);
                     earlyExitRequested = visit(node, path) || earlyExitRequested;
