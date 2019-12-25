@@ -8,5 +8,8 @@
   <ItemGroup>
     <None Remove="13.html" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OptimizedPriorityQueue" Version="4.2.0" />
+  </ItemGroup>
   <Import Project="..\Common\Common.projitems" Label="Shared" Condition="Exists('..\Common\Common.projitems')" />
 </Project>
