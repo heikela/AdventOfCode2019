@@ -39,18 +39,6 @@ namespace Day12
             return sum;
         }
 
-        static int HashState(List<IntPoint3D> pos, List<IntPoint3D> vel)
-        {
-            HashCode hash = new HashCode();
-            for (int i = 0; i < pos.Count; ++i)
-            {
-                hash.Add(pos[i].GetHashCode());
-                hash.Add(vel[i].GetHashCode());
-            }
-            return hash.ToHashCode();
-
-        }
-
         static void Main(string[] args)
         {
             List<IntPoint3D> pos = new List<IntPoint3D>()
@@ -59,13 +47,6 @@ namespace Day12
                 new IntPoint3D() { X = -2, Y = -8, Z = 8 },
                 new IntPoint3D() { X = 7, Y = -6, Z = 14 },
                 new IntPoint3D() { X = 1, Y = -10, Z = 4 }
-            };
-            List<IntPoint3D> pos2 = new List<IntPoint3D>()
-            {
-                new IntPoint3D() { X = -1, Y = 0, Z = 2 },
-                new IntPoint3D() { X = 2, Y = -10, Z = -7 },
-                new IntPoint3D() { X = 4, Y = -8, Z = 8 },
-                new IntPoint3D() { X = 3, Y = 5, Z = -1 }
             };
             List<IntPoint3D> vel = pos.Select(x => new IntPoint3D()).ToList();
             int time = 0;
