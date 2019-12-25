@@ -27,7 +27,7 @@ namespace Day11
             do
             {
                 inputs.Enqueue(hull.GetOrElse(position, 0));
-                result = computer.RunIntCode(inputs);
+                result = computer.RunIntCodeV11(inputs);
                 if (result.output.Count() != 2)
                 {
                     throw new Exception("Expected a painting and a movement command");

@@ -92,7 +92,7 @@ namespace Day17
         static void Main(string[] args)
         {
             IntCodeComputer computer = new IntCodeComputer(File.ReadLines("../../../input.txt").First());
-            (bool running, List<BigInteger> output) result = computer.RunIntCode(new Queue<BigInteger>());
+            (bool running, List<BigInteger> output) result = computer.RunIntCodeV11(new Queue<BigInteger>());
             int y = 0;
             int x = 0;
             foreach (var n in result.output)
@@ -196,7 +196,7 @@ namespace Day17
             {
                 input.Enqueue(c);
             }
-            result = controlComputer.RunIntCode(input);
+            result = controlComputer.RunIntCodeV11(input);
             foreach (BigInteger n in result.output)
             {
                 Console.WriteLine($"Control program output = {n}");

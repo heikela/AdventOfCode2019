@@ -113,7 +113,7 @@ namespace Day15
                     pathToUnexplored.RemoveAt(0);
                     IntPoint2D direction = stepTarget - Pos;
                     input.Enqueue(Moves.IndexOf(direction) + 1);
-                    result = droidControl.RunIntCode(input);
+                    result = droidControl.RunIntCodeV11(input);
                     if (result.output.Count != 1)
                     {
                         throw new Exception($"Expected one status code as output, got {result.output.Count}");
@@ -159,7 +159,7 @@ namespace Day15
                     pathToUnexplored.RemoveAt(0);
                     IntPoint2D direction = stepTarget - Pos;
                     input.Enqueue(Moves.IndexOf(direction) + 1);
-                    result = droidControl.RunIntCode(input);
+                    result = droidControl.RunIntCodeV11(input);
                     if (result.output.Count != 1)
                     {
                         throw new Exception($"Expected one status code as output, got {result.output.Count}");

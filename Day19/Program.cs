@@ -17,7 +17,7 @@ namespace Day19
             Queue<BigInteger> input = new Queue<BigInteger>();
             input.Enqueue(x);
             input.Enqueue(y);
-            (bool running, List<BigInteger> output) = computer.RunIntCode(input);
+            (bool running, List<BigInteger> output) = computer.RunIntCodeV11(input);
             return output[0] == 1;
         }
 

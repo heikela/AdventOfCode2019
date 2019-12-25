@@ -50,7 +50,7 @@ namespace Day21
         static void TestJumpProgram(IEnumerable<string> program)
         {
             IntCodeComputer computer = new IntCodeComputer(ProgrammerProgram);
-            (bool running, List<BigInteger> output) = computer.RunIntCode(MakeInput(program));
+            (bool running, List<BigInteger> output) = computer.RunIntCodeV11(MakeInput(program));
             HandleOutput(output);
         }
 

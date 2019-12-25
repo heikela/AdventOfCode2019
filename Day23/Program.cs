@@ -18,7 +18,8 @@ namespace Day23
         List<IntCodeComputer> Nics;
         List<Queue<BigInteger>> Inputs;
         List<OutputBuffer> OutBuffers;
-        List<bool> Running;
+        List<IntCodeComputer.State> NicStates;
+        List<int> CountPollWithoutOutput;
 
         public Network(string program)
         {
@@ -30,25 +31,33 @@ namespace Day23
                 return q;
             }).ToList();
             OutBuffers = Enumerable.Range(0, 50).Select(i => new OutputBuffer()).ToList();
-            Running = Enumerable.Range(0, 50).Select(i => true).ToList();
+            NicStates = Enumerable.Range(0, 50).Select(i => IntCodeComputer.State.Running).ToList();
+            CountPollWithoutOutput = Enumerable.Range(0, 50).Select(i => 0).ToList();
         }
 
         public BigInteger Simulate()
         {
+            BigInteger? natX = null;
+            BigInteger? natY = null;
+            BigInteger? prevNatX = null;
+            BigInteger? prevNatY = null;
+            int idleThreshold = 1000;
             while (true)
             {
                 for (int i = 0; i < 50; ++i)
                 {
-                    if (Running[i])
+                    if (NicStates[i] != IntCodeComputer.State.Stopped)
                     {
-                        (bool running, IEnumerable<BigInteger> output) result =
+                        (IntCodeComputer.State state, IEnumerable<BigInteger> output) result =
                             Nics[i].RunIntCode(Inputs[i], false, 1);
-                        if (!result.running)
+                        NicStates[i] = result.state;
+                        if (result.state == IntCodeComputer.State.PollingForInput)
                         {
-                            Running[i] = false;
+                            CountPollWithoutOutput[i]++;
                         }
                         foreach (BigInteger n in result.output)
                         {
+                            CountPollWithoutOutput[i] = 0;
                             if (OutBuffers[i].Addr == null)
                             {
                                 if (n > int.MaxValue)
@@ -65,7 +74,10 @@ namespace Day23
                             {
                                 if (OutBuffers[i].Addr == 255)
                                 {
-                                    return n;
+                                    natX = OutBuffers[i].X.Value;
+                                    natY = n;
+                                    OutBuffers[i].Addr = null;
+                                    OutBuffers[i].X = null;
                                 }
                                 else
                                 {
@@ -78,6 +90,25 @@ namespace Day23
                         }
                     }
                 }
+                if (CountPollWithoutOutput.Min() > idleThreshold)
+                {
+                    if (!natX.HasValue || !natY.HasValue)
+                    {
+                        throw new Exception("Needing Nat message before setting Nat state");
+                    }
+                    Inputs[0].Enqueue(natX.Value);
+                    Inputs[0].Enqueue(natY.Value);
+                    if (natX == prevNatX && natY == prevNatY)
+                    {
+                        return prevNatY.Value;
+                    }
+                    prevNatX = natX;
+                    prevNatY = natY;
+                    foreach (int i in Enumerable.Range(0, CountPollWithoutOutput.Count))
+                    {
+                        CountPollWithoutOutput[i] = 0;
+                    }
+                }
             }
         }
     }
@@ -88,7 +119,7 @@ namespace Day23
         {
             string nicProgram = File.ReadLines("../../../input.txt").First();
             Network network = new Network(nicProgram);
-            Console.WriteLine($"Part 1: {network.Simulate()}");
+            Console.WriteLine($"Part 2: {network.Simulate()}");
         }
     }
 }

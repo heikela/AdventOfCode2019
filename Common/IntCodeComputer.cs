@@ -11,6 +11,13 @@ namespace Common
         BigInteger PC;
         BigInteger RelativeBase;
 
+        public enum State
+        {
+            Stopped,
+            Running,
+            PollingForInput
+        };
+
         struct AddrLens
         {
             public Action<BigInteger> Set;
@@ -86,17 +93,20 @@ namespace Common
                     DecodeParam(opcode, 1).Get()));
         }
 
-        /*        public (bool running, List<BigInteger> output) RunIntCode(IEnumerable<int> input)
-                {
+        public (bool running, List<BigInteger> output) RunIntCodeV11(Queue<BigInteger> input)
+        {
+            (State state, List<BigInteger> output) result = RunIntCode(input);
+            return (result.state != State.Stopped, result.output);
+        }
 
-                }
-                */
-        public (bool running, List<BigInteger> output) RunIntCode(Queue<BigInteger> input, bool blockForInput = true, int maxSteps = int.MaxValue)
+        public (State state, List<BigInteger> output) RunIntCode(Queue<BigInteger> input, bool blockForInput = true, int maxSteps = int.MaxValue)
         {
             List<BigInteger> output = new List<BigInteger>();
             int cycles = 0;
+            State state = State.Running;
             while (cycles++ < maxSteps)
             {
+                state = State.Running;
                 BigInteger opcode = GetMem(PC);
                 switch ((int)(opcode % 100))
                 {
@@ -116,7 +126,7 @@ namespace Common
                         {
                             if (!input.Any() && blockForInput)
                             {
-                                return (true, output);
+                                return (State.PollingForInput, output);
                             } else
                             {
                                 BigInteger val;
@@ -125,6 +135,7 @@ namespace Common
                                     val = input.Dequeue();
                                 } else
                                 {
+                                    state = State.PollingForInput;
                                     val = -1;
                                 }
                                 DecodeParam(opcode, 0).Set(val);
@@ -180,12 +191,12 @@ namespace Common
                             break;
                         }
                     case 99:
-                        return (false, output);
+                        return (State.Stopped, output);
                     default:
                         throw new Exception($"ERROR: unknown Opcode {opcode} at address {PC}");
                 }
             }
-            return (true, output);
+            return (state, output);
         }
     }
 }

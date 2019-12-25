@@ -49,7 +49,7 @@ namespace Day13
         public Dictionary<IntPoint2D, Tile> DrawFrame()
         {
             Queue<BigInteger> inputs = new Queue<BigInteger>();
-            (bool running, IEnumerable<BigInteger> output) result = Computer.RunIntCode(inputs);
+            (bool running, IEnumerable<BigInteger> output) result = Computer.RunIntCodeV11(inputs);
             IEnumerator<BigInteger> output = result.output.GetEnumerator();
             while (output.MoveNext())
             {
@@ -138,7 +138,7 @@ namespace Day13
             do
             {
                 Queue<BigInteger> inputs = MakeInput();
-                result = Computer.RunIntCode(inputs);
+                result = Computer.RunIntCodeV11(inputs);
                 UpdateScreen(result.output.GetEnumerator());
                 AnalyzeFrame();
                 if (RemainingBlocks() == 0)

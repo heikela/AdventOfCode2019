@@ -27,7 +27,7 @@ namespace Day07
             {
                 Queue<BigInteger> input = MakeInput(phases[amp], prevOutput);
                 IntCodeComputer amplifier = new IntCodeComputer(AmpProgram);
-                var result = amplifier.RunIntCode(input);
+                var result = amplifier.RunIntCodeV11(input);
                 if (result.running)
                 {
                     throw new Exception("Program did not halt as expected");
@@ -58,7 +58,7 @@ namespace Day07
             while (runningAmplifiers.Any())
             {
                 int active = runningAmplifiers.First(i => inputs[i].Any());
-                var result = amplifiers[active].RunIntCode(inputs[active]);
+                var result = amplifiers[active].RunIntCodeV11(inputs[active]);
                 if (!result.running)
                 {
                     runningAmplifiers.Remove(active);
