@@ -18,7 +18,7 @@ namespace Common
             PollingForInput
         };
 
-        struct AddrLens
+        struct MemRef
         {
             public Action<BigInteger> Set;
             public Func<BigInteger> Get;
@@ -53,7 +53,7 @@ namespace Common
             Memory.AddOrSet(addr, val);
         }
 
-        AddrLens DecodeParam(BigInteger opcode, int param)
+        MemRef DecodeParam(BigInteger opcode, int param)
         {
             int pow = 100;
             for (int i = 0; i < param; ++i)
@@ -65,7 +65,7 @@ namespace Common
             BigInteger paramValue = GetMem(PC + param + 1);
             if (immediate)
             {
-                return new AddrLens()
+                return new MemRef()
                 {
                     Get = () => paramValue,
                     Set = (newVal) => throw new Exception("Cannot write to immediate mode param")
@@ -77,7 +77,7 @@ namespace Common
                 {
                     paramValue += RelativeBase;
                 }
-                return new AddrLens()
+                return new MemRef()
                 {
                     Get = () => GetMem(paramValue),
                     Set = (val) => SetMem(paramValue, val)
