@@ -121,17 +121,7 @@ namespace Day14
             {
                 UseSurplusOrMake(i.Chemical, i.Quantity * multiplier);
             }
-            if (surplusProduced > 0)
-            {
-                if (Surpluses.ContainsKey(chemical))
-                {
-                    Surpluses[chemical] += surplusProduced;
-                }
-                else
-                {
-                    Surpluses.Add(chemical, surplusProduced);
-                }
-            }
+            Surpluses.AddOrSet(chemical, Surpluses.GetOrElse(chemical, 0) + surplusProduced);
         }
     }
 
