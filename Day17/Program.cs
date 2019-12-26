@@ -91,7 +91,8 @@ namespace Day17
 
         static void Main(string[] args)
         {
-            IntCodeComputer computer = new IntCodeComputer(File.ReadLines("../../../input.txt").First());
+            string programmerProgram = File.ReadLines("../../../input.txt").First();
+            IntCodeComputer computer = new IntCodeComputer(programmerProgram);
             (bool running, List<BigInteger> output) result = computer.RunIntCodeV11(new Queue<BigInteger>());
             int y = 0;
             int x = 0;
@@ -181,7 +182,8 @@ namespace Day17
             Console.WriteLine($"Found repeat between elements {bestStart}, {bestEnd}");
             Console.WriteLine(string.Join(",", commands.Skip(bestStart).Take(bestEnd - bestStart)));
 
-            IntCodeComputer controlComputer = new IntCodeComputer("2" + File.ReadLines("../../../input.txt").First().Substring(1));
+            IntCodeComputer controlComputer = new IntCodeComputer(programmerProgram);
+            controlComputer.Patch(0, 2);
             List<string> program = new List<string>()
             {
                 "A,B,A,C,B,C,B,C,A,C",
