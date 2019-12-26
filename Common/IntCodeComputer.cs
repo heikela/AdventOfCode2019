@@ -35,6 +35,11 @@ namespace Common
             RelativeBase = 0;
         }
 
+        public void Patch(BigInteger addr, BigInteger val)
+        {
+            Memory.AddOrSet(addr, val);
+        }
+
         BigInteger GetMem(BigInteger addr)
         {
             if (addr < 0)

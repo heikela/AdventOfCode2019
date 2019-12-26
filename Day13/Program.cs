@@ -15,13 +15,17 @@ namespace Day13
         BigInteger BallX;
         BigInteger PaddleX;
 
-        public ArcadeMachine(string program)
+        public ArcadeMachine(string program, bool hacked = false)
         {
             Computer = new IntCodeComputer(program);
             Screen = new Dictionary<IntPoint2D, Tile>();
             Score = 0;
             BallX = 0;
             PaddleX = 0;
+            if (hacked)
+            {
+                Computer.Patch(0, 2);
+            }
         }
 
         public enum Tile
@@ -51,22 +55,7 @@ namespace Day13
             Queue<BigInteger> inputs = new Queue<BigInteger>();
             (bool running, IEnumerable<BigInteger> output) result = Computer.RunIntCodeV11(inputs);
             IEnumerator<BigInteger> output = result.output.GetEnumerator();
-            while (output.MoveNext())
-            {
-                int x = (int)output.Current;
-                if (!output.MoveNext())
-                {
-                    throw new Exception("Expected output count to be divisible by 3");
-                }
-                int y = (int)output.Current;
-                if (!output.MoveNext())
-                {
-                    throw new Exception("Expected output count to be divisible by 3");
-                }
-                Tile tile = (Tile)(int)output.Current;
-
-                Screen.AddOrSet(new IntPoint2D(x, y), tile);
-            }
+            UpdateScreen(output);
 
             return Screen;
         }
@@ -107,6 +96,10 @@ namespace Day13
         {
             BallX = Screen.First(kv => kv.Value == Tile.Ball).Key.X;
             PaddleX = Screen.First(kv => kv.Value == Tile.Paddle).Key.X;
+        }
+
+        void ShowFrame()
+        {
             SparseGrid.Print(Screen, ShowTile);
         }
 
@@ -141,11 +134,8 @@ namespace Day13
                 result = Computer.RunIntCodeV11(inputs);
                 UpdateScreen(result.output.GetEnumerator());
                 AnalyzeFrame();
-                if (RemainingBlocks() == 0)
-                {
-                    return Score;
-                }
-            } while (result.running);
+                //ShowFrame();
+            } while (result.running && RemainingBlocks() > 0);
             return Score;
         }
     }
@@ -159,9 +149,9 @@ namespace Day13
 
             Console.WriteLine($"The frame has {screen.Count(kv => kv.Value == ArcadeMachine.Tile.Block)} blocks at start");
 
-            string hackedProgram = string.Concat(new string[] { "2", program.Substring(1) });
+            var score = new ArcadeMachine(program, true).RunGame();
 
-            Console.WriteLine($"Winning score = {new ArcadeMachine(hackedProgram).RunGame()}");
+            Console.WriteLine($"Winning score = {score}");
         }
     }
 }
