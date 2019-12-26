@@ -16,5 +16,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)SparseGrid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IntCodeComputer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MathUtils.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PeriodDetector.cs" />
   </ItemGroup>
 </Project>
