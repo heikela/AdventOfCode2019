@@ -56,10 +56,14 @@ namespace Day16
 
         static void Main(string[] args)
         {
+            /* TODO implement a more on-demand version that only calculates those
+               partial sums that are needed for a desired result. It should
+               be possible to come up with a solution that is as general as
+               the current one (capable of calculating digits early in the
+               sequence), but happens to be fast for the special case
+               used in the puzzle (items in the second half of the sequence) */
             string input = File.ReadLines("../../../input.txt").First();
             int skip = 5971981;
-//            int skip = 293510;
-            //string input = "02935109699940807407585447034323";
             int repeats = 10000;
             List<int> values = Enumerable.Repeat(input.AsEnumerable().Select(c => int.Parse($"{c}")), repeats).Flatten().ToList();
 
@@ -84,7 +88,6 @@ namespace Day16
                 Console.Write(prev[pos]);
             }
             Console.WriteLine("");
-            // not 020619550
         }
     }
 }
