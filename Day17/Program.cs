@@ -8,6 +8,47 @@ using System.Numerics;
 
 namespace Day17
 {
+    public class Compressor<T> where T : IEquatable<T>
+    {
+        public class CompressionResult
+        {
+            List<int> Compressed;
+            Dictionary<int, List<T>> Code;
+
+            public IEnumerable<int> GetCompressed()
+            {
+                return Compressed;
+            }
+
+            public IEnumerable<T> Decompress(int code)
+            {
+                return Code[code];
+            }
+
+            public IEnumerable<T> Decompress(IEnumerable<int> compressed)
+            {
+                return compressed.SelectMany(c => Decompress(c));
+            }
+        }
+
+        public static CompressionResult Compress(IEnumerable<T> input, int maxSegments, int maxSegmentLength)
+        {
+            return Compress(new List<List<T>>() { input.ToList() }, maxSegments, maxSegmentLength);
+        }
+
+        private static CompressionResult Compress(List<List<T>> input, int maxSegments, int maxSegmentLength)
+        {
+            int firstSegmentLength = Math.Max(maxSegmentLength, input.First().Count);
+            while (firstSegmentLength > 0)
+            {
+                IEnumerable<T> candidate = input.First().Take(firstSegmentLength);
+/// Check if this leads to a valid compression result
+                --firstSegmentLength;
+            }
+            return null;
+        }
+    }
+
     class Program
     {
         static Dictionary<IntPoint2D, char> Routes = new Dictionary<IntPoint2D, char>();
